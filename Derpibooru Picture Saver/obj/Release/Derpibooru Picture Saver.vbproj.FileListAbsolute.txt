@@ -1,0 +1,17 @@
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\Derpibooru Picture Saver.exe.config
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\Derpibooru Picture Saver.exe
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\Derpibooru Picture Saver.pdb
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\Derpibooru Picture Saver.xml
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\Newtonsoft.Json.dll
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\SimpleHttpRequest.dll
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver.vbprojResolveAssemblyReference.cache
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\MainWindow.baml
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\MainWindow.g.vb
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Application.g.vb
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver_MarkupCompile.cache
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver.g.resources
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru_Picture_Saver.Resources.resources
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver.vbproj.GenerateResource.Cache
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver.exe
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver.xml
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver.pdb

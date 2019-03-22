@@ -1,0 +1,5 @@
+D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\bin\Debug\SimpleHttpRequest.dll
+D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\bin\Debug\SimpleHttpRequest.pdb
+D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\obj\Debug\SimpleHttpRequest.csprojResolveAssemblyReference.cache
+D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\obj\Debug\SimpleHttpRequest.dll
+D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\obj\Debug\SimpleHttpRequest.pdb
