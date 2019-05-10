@@ -1,7 +1,8 @@
-﻿<Window x:Class="MainWindow"
+﻿<Controls:MetroWindow x:Class="MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Derpibooru 相片下載程式" Height="725" Width="1000" WindowStartupLocation="CenterScreen" MinWidth="750" MinHeight="450" Icon="Icon/Icon.ICO">
+    xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    Title="Derpibooru 相片下載程式" Height="725" Width="1000" WindowStartupLocation="CenterScreen" MinWidth="750" MinHeight="450" Icon="Icon/MetroIcon.ico">
     <DockPanel Margin="0">
         <StackPanel Margin="0" VerticalAlignment="Top" DockPanel.Dock="Top">
             <DockPanel Margin="10,10,10,0">
@@ -58,4 +59,4 @@
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo x:Name="TaskbarItem" />
     </Window.TaskbarItemInfo>
-</Window>
+</Controls:MetroWindow>
