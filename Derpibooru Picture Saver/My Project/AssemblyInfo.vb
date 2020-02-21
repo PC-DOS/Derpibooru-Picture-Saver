@@ -15,7 +15,7 @@ Imports System.Windows
 <Assembly: AssemblyDescription("Derpibooru Picture Downloader")> 
 <Assembly: AssemblyCompany("PC-DOS Workshop")> 
 <Assembly: AssemblyProduct("Derpibooru Picture Downloader")> 
-<Assembly: AssemblyCopyright("Copyright © 2013-2019 PC-DOS Workshop")> 
+<Assembly: AssemblyCopyright("Copyright © 2013-2020 PC-DOS Workshop")> 
 <Assembly: AssemblyTrademark("PC-DOS Workshop")> 
 <Assembly: ComVisible(false)>
 
@@ -55,5 +55,5 @@ Imports System.Windows
 ' 指定為預設值: 
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("1.2.4.5")> 
-<Assembly: AssemblyFileVersion("1.2.4.5")> 
+<Assembly: AssemblyVersion("2.2.4.5")> 
+<Assembly: AssemblyFileVersion("2.2.4.5")> 

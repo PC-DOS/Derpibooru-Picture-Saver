@@ -15,9 +15,9 @@ Class MainWindow
     Dim IsPauseOn As Boolean = False
     Dim iPauseThreshold As Integer
     Dim iPauseDuration As Integer
-    Const DerpibooruSearchPreix As String = "https://derpibooru.org/search.json?q="
+    Const DerpibooruSearchPrefix As String = "https://derpibooru.org/api/v1/json/search?q="
     Const DerpibooruSearchPageSelector As String = "&page="
-    Const DerpibooruImagesPerpageSelector As String = "&perpage=50"
+    Const DerpibooruImagesPerpageSelector As String = "&per_page=50"
     Const DerpibooruImagesPerpage As Integer = 50
     Const DerpibooruImagesMinScoreSelector As String = "&min_score="
     Const DerpibooruImagesMaxScoreSelector As String = "&max_score="
@@ -54,7 +54,7 @@ Class MainWindow
         chkRestrictMinScore.IsEnabled = True
         cmbFilters.IsEnabled = False
     End Sub
-    Private Sub SetTastbarProgess(MaxValue As Integer, MinValue As Integer, CurrentValue As Integer, Optional State As Shell.TaskbarItemProgressState = Shell.TaskbarItemProgressState.Normal)
+    Private Sub SetTaskbarProgess(MaxValue As Integer, MinValue As Integer, CurrentValue As Integer, Optional State As Shell.TaskbarItemProgressState = Shell.TaskbarItemProgressState.Normal)
         If MaxValue <= MinValue Or CurrentValue < MinValue Or CurrentValue > MaxValue Then
             Exit Sub
         End If
@@ -80,7 +80,7 @@ Class MainWindow
     Private Sub btnBrowse_Click(sender As Object, e As RoutedEventArgs) Handles btnBrowse.Click
         Dim FolderBrowser As New FolderBrowserDialog
         With FolderBrowser
-            .Description = "請指定儲存位置"
+            .Description = "請指定下載的檔案的儲存位置，然後按一下 [複製] 按鈕。"
         End With
         If FolderBrowser.ShowDialog() = Forms.DialogResult.OK Then
             sSaveTo = FolderBrowser.SelectedPath
@@ -99,20 +99,20 @@ Class MainWindow
         If txtSearchKey.Text.Trim() = "" Then
             MessageBox.Show("請輸入搜尋條件。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
             UnlockWindow()
-            SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
             Exit Sub
         End If
         If chkPause.IsChecked Then
             If Not IsNumeric(txtPauseDuration.Text) Then
                 MessageBox.Show("指定的擱置時間長度存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 UnlockWindow()
-                SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
             If Not IsNumeric(txtPauseThreshold.Text) Then
                 MessageBox.Show("指定的擱置門限值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 UnlockWindow()
-                SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
             iPauseThreshold = txtPauseThreshold.Text
@@ -124,26 +124,26 @@ Class MainWindow
         Dim iPageIndex As Integer = 1
         Dim Filter As New ComboBoxItem
         Filter = cmbFilters.SelectedItem
-        sSearchQuery = DerpibooruSearchPreix & txtSearchKey.Text.Trim().Replace(" ", "+") & DerpibooruSearchPageSelector & iPageIndex.ToString() & DerpibooruImagesPerpageSelector & DerpibooruImagesFilterSelector & Filter.Tag.ToString
+        sSearchQuery = DerpibooruSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & DerpibooruSearchPageSelector & iPageIndex.ToString() & DerpibooruImagesPerpageSelector & DerpibooruImagesFilterSelector & Filter.Tag.ToString
         If chkRestrictMinScore.IsChecked Then
             If Not IsNumeric(txtMinScore.Text) Then
                 MessageBox.Show("指定的最低評分值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 UnlockWindow()
-                SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
             iMinScore = txtMinScore.Text
-            sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString()
+            'sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString()
         End If
         If chkRestrictMaxScore.IsChecked Then
             If Not IsNumeric(txtMaxScore.Text) Then
                 MessageBox.Show("指定的最高評分值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 UnlockWindow()
-                SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
             iMaxScore = txtMaxScore.Text
-            sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
+            'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
         End If
         If chkRestrictMaxScore.IsChecked And chkRestrictMinScore.IsChecked Then
             If iMinScore > iMaxScore Then
@@ -151,7 +151,7 @@ Class MainWindow
                     'DoNothing()
                 Else
                     UnlockWindow()
-                    SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                    SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                     Exit Sub
                 End If
             End If
@@ -172,7 +172,7 @@ Class MainWindow
             UnlockWindow()
             txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
             UpdateLayout()
-            SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
             Exit Sub
         End Try
         'MessageBox.Show(sJSON)
@@ -186,7 +186,7 @@ Class MainWindow
         If JSONResponse("total").ToString = "0" Then
             MessageBox.Show("沒有找到符合您指定的搜尋條件的相片。", "沒有結果", MessageBoxButtons.OK, MessageBoxIcon.Information)
             UnlockWindow()
-            SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
             Exit Sub
         End If
         If MessageBox.Show("搜尋完畢!" & vbCrLf & "本次搜尋總共搜尋到 " & JSONResponse("total").ToString & " 張相片。一共 " & iPageTotal.ToString & " 個分頁。" & vbCrLf & "開始下載相片嗎?", "下載相片", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = Forms.DialogResult.Yes Then
@@ -200,7 +200,7 @@ Class MainWindow
                 txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
                 UnlockWindow()
                 UpdateLayout()
-                SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End Try
             JSONResponse = JsonConvert.DeserializeObject(sJSON)
@@ -210,26 +210,26 @@ Class MainWindow
             prgProgress.Minimum = 0
             prgProgress.Value = 0
             For iPageIndex = 1 To iPageTotal
-                sSearchQuery = DerpibooruSearchPreix & txtSearchKey.Text.Trim().Replace(" ", "+") & DerpibooruSearchPageSelector & iPageIndex.ToString() & DerpibooruImagesPerpageSelector & DerpibooruImagesFilterSelector & Filter.Tag.ToString
+                sSearchQuery = DerpibooruSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & DerpibooruSearchPageSelector & iPageIndex.ToString() & DerpibooruImagesPerpageSelector & DerpibooruImagesFilterSelector & Filter.Tag.ToString
                 If chkRestrictMinScore.IsChecked Then
                     If Not IsNumeric(txtMinScore.Text) Then
                         MessageBox.Show("指定的最低評分值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                         UnlockWindow()
-                        SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                        SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                         Exit Sub
                     End If
                     iMinScore = txtMinScore.Text
-                    sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString()
+                    'sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString()
                 End If
                 If chkRestrictMaxScore.IsChecked Then
                     If Not IsNumeric(txtMaxScore.Text) Then
                         MessageBox.Show("指定的最高評分值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                         UnlockWindow()
-                        SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                        SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                         Exit Sub
                     End If
                     iMaxScore = txtMaxScore.Text
-                    sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
+                    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
                 End If
                 If chkRestrictMaxScore.IsChecked And chkRestrictMinScore.IsChecked Then
                     If iMinScore > iMaxScore Then
@@ -237,7 +237,7 @@ Class MainWindow
                             'DoNothing()
                         Else
                             UnlockWindow()
-                            SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                             Exit Sub
                         End If
                     End If
@@ -249,15 +249,15 @@ Class MainWindow
                     UnlockWindow()
                     txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
                     UpdateLayout()
-                    SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                    SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                     Exit Sub
                 End Try
                 JSONCache.Add(sJSON)
                 System.Windows.Forms.Application.DoEvents()
                 prgProgress.Value = iPageIndex
-                SetTastbarProgess(iPageTotal, 0, iPageIndex, Shell.TaskbarItemProgressState.Paused)
+                SetTaskbarProgess(iPageTotal, 0, iPageIndex, Shell.TaskbarItemProgressState.Paused)
             Next
-            SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
             txtStatus.Text = "正在從 Derpibooru 下載檔案。"
             sJSON = JSONCache(0)
             JSONResponse = JsonConvert.DeserializeObject(sJSON)
@@ -270,6 +270,7 @@ Class MainWindow
             Dim sImageURL As String = ""
             Dim nSuccess As Integer = 0
             Dim nFail As Integer = 0
+            Dim nIgnored As Integer = 0
             For iPageIndex = 1 To iPageTotal
                 sJSON = JSONCache(iPageIndex - 1)
                 JSONResponse = JsonConvert.DeserializeObject(sJSON)
@@ -277,8 +278,43 @@ Class MainWindow
                     If Not Directory.Exists(sSaveTo) Then
                         Directory.CreateDirectory(sSaveTo)
                     End If
-                    sImageURL = "https:" & JSONResponse("search")(iPhotoIndex)("image").ToString
+                    sImageURL = JSONResponse("images")(iPhotoIndex)("view_url").ToString
                     sImageFileName = GetFileNameFromDircectURL(sImageURL)
+                    'MessageBox.Show(sImageFileName)
+                    If chkRestrictMinScore.IsChecked Then
+                        If CInt(JSONResponse("images")(iPhotoIndex)("score")) < iMinScore Then
+                            nIgnored += 1
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & JSONResponse("images")(iPhotoIndex)("score").ToString() & " 低於指定的最低評分 " & iMinScore.ToString() & "。")
+                            RefreshURLList()
+                            System.Windows.Forms.Application.DoEvents()
+                            prgProgress.Value += 1
+                            SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                            UpdateLayout()
+                            If IsPauseOn Then
+                                If prgProgress.Value Mod iPauseThreshold = 0 Then
+                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
+                                End If
+                            End If
+                            Continue For
+                        End If
+                    End If
+                    If chkRestrictMaxScore.IsChecked Then
+                        If CInt(JSONResponse("images")(iPhotoIndex)("score")) > iMaxScore Then
+                            nIgnored += 1
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & JSONResponse("images")(iPhotoIndex)("score").ToString() & " 低於指定的最高評分 " & iMaxScore.ToString() & "。")
+                            RefreshURLList()
+                            System.Windows.Forms.Application.DoEvents()
+                            prgProgress.Value += 1
+                            SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                            UpdateLayout()
+                            If IsPauseOn Then
+                                If prgProgress.Value Mod iPauseThreshold = 0 Then
+                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
+                                End If
+                            End If
+                            Continue For
+                        End If
+                    End If
                     Dim FileDownloader As New WebClient
                     Try
                         FileDownloader.DownloadFile(sImageURL, sSaveTo & sImageFileName)
@@ -292,7 +328,7 @@ Class MainWindow
                     End Try
                     System.Windows.Forms.Application.DoEvents()
                     prgProgress.Value += 1
-                    SetTastbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                    SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                     UpdateLayout()
                     If IsPauseOn Then
                         If prgProgress.Value Mod iPauseThreshold = 0 Then
@@ -301,16 +337,16 @@ Class MainWindow
                     End If
                 Next
             Next
-            MessageBox.Show("作業成功完成。本次共成功下載了 " & nSuccess.ToString & " 個檔案，有 " & nFail.ToString & " 個檔案下載失敗。", "大功告成!", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            MessageBox.Show("作業成功完成。本次共成功下載了 " & nSuccess.ToString & " 個檔案，有 " & nFail.ToString & " 個檔案下載失敗，略過了 " & nIgnored.ToString() & " 個檔案。", "大功告成!", MessageBoxButtons.OK, MessageBoxIcon.Information)
             UnlockWindow()
-            txtStatus.Text = "作業成功完成。本次共成功下載了 " & nSuccess.ToString & " 個檔案，有 " & nFail.ToString & " 個檔案下載失敗。"
+            txtStatus.Text = "作業成功完成。本次共成功下載了 " & nSuccess.ToString & " 個檔案，有 " & nFail.ToString & " 個檔案下載失敗，略過了 " & nIgnored.ToString() & " 個檔案。"
             UpdateLayout()
-            SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
         Else
             UnlockWindow()
             txtStatus.Text = "使用者取消了作業。"
             UpdateLayout()
-            SetTastbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
             Exit Sub
         End If
     End Sub
