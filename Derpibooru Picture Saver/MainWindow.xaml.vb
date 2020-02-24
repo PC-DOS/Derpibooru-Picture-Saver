@@ -52,7 +52,7 @@ Class MainWindow
         chkPause.IsEnabled = True
         chkRestrictMaxScore.IsEnabled = True
         chkRestrictMinScore.IsEnabled = True
-        cmbFilters.IsEnabled = False
+        cmbFilters.IsEnabled = True
     End Sub
     Private Sub SetTaskbarProgess(MaxValue As Integer, MinValue As Integer, CurrentValue As Integer, Optional State As Shell.TaskbarItemProgressState = Shell.TaskbarItemProgressState.Normal)
         If MaxValue <= MinValue Or CurrentValue < MinValue Or CurrentValue > MaxValue Then
