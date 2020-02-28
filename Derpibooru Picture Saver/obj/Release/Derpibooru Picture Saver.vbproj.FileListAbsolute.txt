@@ -4,7 +4,6 @@ D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\Derpibooru Pict
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\Derpibooru Picture Saver.xml
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\Newtonsoft.Json.dll
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\SimpleHttpRequest.dll
-D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver.vbprojResolveAssemblyReference.cache
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\MainWindow.baml
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\MainWindow.g.vb
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Application.g.vb

@@ -25,6 +25,12 @@ Class MainWindow
     Private Sub RefreshURLList()
         lstSavedURL.ItemsSource = EmptyList
         lstSavedURL.ItemsSource = URLList
+        lstSavedURL.SelectedIndex = lstSavedURL.Items.Count - 1
+        Try
+            lstSavedURL.ScrollIntoView(lstSavedURL.SelectedItem)
+        Catch ex As Exception
+            Exit Sub
+        End Try
     End Sub
     Private Sub LockWindow()
         txtMaxScore.IsEnabled = False
@@ -80,7 +86,7 @@ Class MainWindow
     Private Sub btnBrowse_Click(sender As Object, e As RoutedEventArgs) Handles btnBrowse.Click
         Dim FolderBrowser As New FolderBrowserDialog
         With FolderBrowser
-            .Description = "請指定下載的檔案的儲存位置，然後按一下 [複製] 按鈕。"
+            .Description = "請指定下載的檔案的儲存位置，然後按一下 [確定] 按鈕。"
         End With
         If FolderBrowser.ShowDialog() = Forms.DialogResult.OK Then
             sSaveTo = FolderBrowser.SelectedPath
