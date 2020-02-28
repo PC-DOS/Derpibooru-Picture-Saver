@@ -6,34 +6,69 @@
     <DockPanel Margin="0">
         <StackPanel Margin="0" VerticalAlignment="Top" DockPanel.Dock="Top">
             <DockPanel Margin="10,10,10,0">
-                <TextBlock Text="搜尋條件" DockPanel.Dock="Left" Margin="0" VerticalAlignment="Center" />
+                <TextBlock Text="搜尋條件: " DockPanel.Dock="Left" Margin="0" VerticalAlignment="Center" />
                 <Button x:Name="btnStart" Content="開始(_S)" DockPanel.Dock="Right" Margin="0,2,2,2" BorderThickness="1" Width="75" IsDefault="True"/>
                 <TextBox x:Name="txtSearchKey" Text="" Margin="5,2"/>
             </DockPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,0" >
-                <CheckBox x:Name="chkRestrictMinScore" Content="限制最低評分(_A)" VerticalAlignment="Center" Margin="10,0,0,0" />
-                <TextBlock Text="最低評分: " VerticalAlignment="Center" Margin="5,0,0,0" />
-                <TextBox x:Name="txtMinScore" Text="0" Width="45" VerticalAlignment="Center" IsEnabled="False" />
-                <TextBlock Text="分" VerticalAlignment="Center" />
-                <CheckBox x:Name="chkRestrictMaxScore" Content="限制最高評分(_I)" VerticalAlignment="Center" Margin="25,0,0,0" />
-                <TextBlock Text="最高評分: " VerticalAlignment="Center" Margin="5,0,0,0" />
-                <TextBox x:Name="txtMaxScore" Text="0" Width="45" VerticalAlignment="Center" IsEnabled="False" />
-                <TextBlock Text="分" VerticalAlignment="Center" />
-                <TextBlock Text="過濾器: " VerticalAlignment="Center" Margin="30,0,0,0" />
-                <ComboBox x:Name="cmbFilters" Width="175" SelectedIndex="0">
+            <StackPanel Orientation="Horizontal"  Margin="0,5,0,0">
+                <TextBlock Text="排序方式: " Margin="10,0,0,0" VerticalAlignment="Center"/>
+                <ComboBox x:Name="cmbSordField" Margin="5,0,0,0" Width="250" SelectedIndex="0">
+                    <ComboBoxItem Content="建立時間 (Upload date)" Tag="created_at"/>
+                    <ComboBoxItem Content="評分 (Score)" Tag="score"/>
+                    <ComboBoxItem Content="質量評分 (Wilson Score)" Tag="wilson_score"/>
+                    <ComboBoxItem Content="關聯性 (Relevance)" Tag="_score"/>
+                    <ComboBoxItem Content="好評數量 (Upvotes)" Tag="upvotes"/>
+                    <ComboBoxItem Content="惡評數量 (Downvotes)" Tag="downvotes"/>
+                    <ComboBoxItem Content="修改時間 (Last modification date)" Tag="updated_at"/>
+                    <ComboBoxItem Content="被加入 [我的最愛] 的次數 (Fave count)" Tag="faves"/>
+                    <ComboBoxItem Content="最初回應時間 (Initial post date)" Tag="first_seen_at"/>
+                    <ComboBoxItem Content="縱橫比 (Aspect ratio)" Tag="aspect_ratio"/>
+                    <ComboBoxItem Content="寬度 (Width)" Tag="width"/>
+                    <ComboBoxItem Content="高度 (Height)" Tag="height"/>
+                    <ComboBoxItem Content="評論數 (Comment count)" Tag="comment_count"/>
+                    <ComboBoxItem Content="關鍵詞數 (Tag count)" Tag="tag_count"/>
+                    <ComboBoxItem Content="隨機 (Random)" Tag="random"/>
+                </ComboBox>
+                <TextBlock Text="排序方向: " VerticalAlignment="Center" Margin="10,0,0,0"/>
+                <ComboBox x:Name="cmbSortDirection" Margin="5,0,0,0" SelectedIndex="0" Width="75">
+                    <ComboBoxItem Content="遞減" Tag="desc"/>
+                    <ComboBoxItem Content="遞增" Tag="asc"/>
+                </ComboBox>
+                <TextBlock Text="過濾器: " VerticalAlignment="Center" Margin="10,0,0,0" />
+                <ComboBox x:Name="cmbFilters" Width="175" SelectedIndex="0" Margin="5,0,0,0">
                     <ComboBoxItem Content="Default" Tag="0"/>
                     <ComboBoxItem Content="Everything" Tag="56027"/>
                     <ComboBoxItem Content="Legacy Default" Tag="37431"/>
                     <ComboBoxItem Content="18+ R34" Tag="37432"/>
                     <ComboBoxItem Content="18+ Dark" Tag="37429"/>
                     <ComboBoxItem Content="Maximum Spoilers" Tag="37430"/>
+                    <ComboBoxItem Content="自訂" Tag="-1"/>
                 </ComboBox>
             </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0" >
+                <CheckBox x:Name="chkRestrictMinScore" Content="限制最低評分(_A)" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <TextBlock Text="最低評分: " VerticalAlignment="Center" Margin="5,0,0,0" />
+                <TextBox x:Name="txtMinScore" Text="0" Width="45" VerticalAlignment="Center" IsEnabled="False" />
+                <TextBlock Text="分" VerticalAlignment="Center" />
+                <CheckBox x:Name="chkRestrictMaxScore" Content="限制最高評分(_I)" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <TextBlock Text="最高評分: " VerticalAlignment="Center" Margin="5,0,0,0" />
+                <TextBox x:Name="txtMaxScore" Text="0" Width="45" VerticalAlignment="Center" IsEnabled="False" />
+                <TextBlock Text="分" VerticalAlignment="Center" />
+                <CheckBox x:Name="chkRestrictMinWilsonScore" Content="限制最低質量評分(_W)" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <Slider x:Name="sldMinWilsonScore" Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1" Width="75" Margin="5,0,0,0" IsSnapToTickEnabled="True" TickFrequency="0.01" IsEnabled="False"/>
+                <TextBlock VerticalAlignment="Center" Text="{Binding Value, ElementName=sldMinWilsonScore}" Margin="5,0,0,0" />
+            </StackPanel>
             <DockPanel Margin="10,5,10,0">
-                <TextBlock Text="儲存位置" DockPanel.Dock="Left" Margin="0" VerticalAlignment="Center" />
+                <TextBlock Text="儲存位置: " DockPanel.Dock="Left" Margin="0" VerticalAlignment="Center" />
                 <Button x:Name="btnBrowse" Content="瀏覽(_B)" DockPanel.Dock="Right" Margin="0,2,2,2" BorderThickness="1" Width="75"/>
                 <TextBox x:Name="txtSaveTo" Text="C:\Derpibooru Images\" Margin="5,2" IsReadOnly="True"/>
             </DockPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <CheckBox x:Name="chkRestrictPageCount" Content="僅下載排名靠前的相片(_R)" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                <TextBlock Text="僅下載前" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                <TextBox x:Name="txtPageCount" Text="10" VerticalAlignment="Center" Width="45" IsEnabled="False" />
+                <TextBlock Text="頁上的相片。" VerticalAlignment="Center" />
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,5,0,10" >
                 <CheckBox x:Name="chkPause" Content="下載時啟用暫止(_P)" VerticalAlignment="Center" Margin="10,0,0,0" />
                 <TextBlock Text="每下載" Padding="5,0,0,0" VerticalAlignment="Center"/>

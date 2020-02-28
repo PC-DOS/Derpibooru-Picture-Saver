@@ -23,3 +23,4 @@ D:\Derpibooru Picture Saver\Derpibooru Picture Saver\bin\Release\MahApps.Metro.x
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Resources\Icons.baml
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Resources\IconsNonShared.baml
 D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Application.baml
+D:\Derpibooru Picture Saver\Derpibooru Picture Saver\obj\Release\Derpibooru Picture Saver.vbprojResolveAssemblyReference.cache

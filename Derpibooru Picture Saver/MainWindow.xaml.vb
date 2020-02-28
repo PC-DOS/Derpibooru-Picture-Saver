@@ -12,9 +12,10 @@ Class MainWindow
     Dim URLList As New List(Of String)
     Dim EmptyList As New List(Of String)
     Dim JSONCache As New List(Of String)
-    Dim IsPauseOn As Boolean = False
+    Dim iPageCount As Integer
     Dim iPauseThreshold As Integer
     Dim iPauseDuration As Integer
+    Dim UserSpecifiedFilterID As Integer
     Const DerpibooruSearchPrefix As String = "https://derpibooru.org/api/v1/json/search?q="
     Const DerpibooruSearchPageSelector As String = "&page="
     Const DerpibooruImagesPerpageSelector As String = "&per_page=50"
@@ -22,6 +23,8 @@ Class MainWindow
     Const DerpibooruImagesMinScoreSelector As String = "&min_score="
     Const DerpibooruImagesMaxScoreSelector As String = "&max_score="
     Const DerpibooruImagesFilterSelector As String = "&filter_id="
+    Const DerpibooruImagesSortFieldSelector As String = "&sf="
+    Const DerpibooruImagesSortDirectionSelector As String = "&sq="
     Private Sub RefreshURLList()
         lstSavedURL.ItemsSource = EmptyList
         lstSavedURL.ItemsSource = URLList
@@ -39,12 +42,18 @@ Class MainWindow
         txtPauseThreshold.IsEnabled = False
         txtSaveTo.IsEnabled = False
         txtSearchKey.IsEnabled = False
+        txtPageCount.IsEnabled = False
         btnBrowse.IsEnabled = False
         btnStart.IsEnabled = False
         chkPause.IsEnabled = False
         chkRestrictMaxScore.IsEnabled = False
         chkRestrictMinScore.IsEnabled = False
+        chkRestrictPageCount.IsEnabled = False
+        chkRestrictMinWilsonScore.IsEnabled = False
         cmbFilters.IsEnabled = False
+        cmbSordField.IsEnabled = False
+        cmbSortDirection.IsEnabled = False
+        sldMinWilsonScore.IsEnabled = False
     End Sub
     Private Sub UnlockWindow()
         txtMaxScore.IsEnabled = chkRestrictMaxScore.IsChecked
@@ -53,12 +62,18 @@ Class MainWindow
         txtPauseThreshold.IsEnabled = chkPause.IsChecked
         txtSaveTo.IsEnabled = True
         txtSearchKey.IsEnabled = True
+        txtPageCount.IsEnabled = chkRestrictPageCount.IsChecked
         btnBrowse.IsEnabled = True
         btnStart.IsEnabled = True
         chkPause.IsEnabled = True
         chkRestrictMaxScore.IsEnabled = True
         chkRestrictMinScore.IsEnabled = True
+        chkRestrictPageCount.IsEnabled = True
+        chkRestrictMinWilsonScore.IsEnabled = True
         cmbFilters.IsEnabled = True
+        cmbSordField.IsEnabled = True
+        cmbSortDirection.IsEnabled = True
+        sldMinWilsonScore.IsEnabled = chkRestrictMinWilsonScore.IsChecked
     End Sub
     Private Sub SetTaskbarProgess(MaxValue As Integer, MinValue As Integer, CurrentValue As Integer, Optional State As Shell.TaskbarItemProgressState = Shell.TaskbarItemProgressState.Normal)
         If MaxValue <= MinValue Or CurrentValue < MinValue Or CurrentValue > MaxValue Then
@@ -123,14 +138,33 @@ Class MainWindow
             End If
             iPauseThreshold = txtPauseThreshold.Text
             iPauseDuration = txtPauseDuration.Text
-            IsPauseOn = True
-        Else
-            IsPauseOn = False
+        End If
+        If chkRestrictPageCount.IsChecked Then
+            If Not IsNumeric(txtPageCount.Text) Then
+                MessageBox.Show("指定的下載頁數存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                UnlockWindow()
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                Exit Sub
+            End If
+            If Int(txtPageCount.Text) < 1 Then
+                MessageBox.Show("指定的下載頁數存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                UnlockWindow()
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                Exit Sub
+            End If
+            iPageCount = txtPageCount.Text
         End If
         Dim iPageIndex As Integer = 1
         Dim Filter As New ComboBoxItem
+        Dim SortField As ComboBoxItem = cmbSordField.SelectedItem
+        Dim SortDirection As ComboBoxItem = cmbSortDirection.SelectedItem
         Filter = cmbFilters.SelectedItem
-        sSearchQuery = DerpibooruSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & DerpibooruSearchPageSelector & iPageIndex.ToString() & DerpibooruImagesPerpageSelector & DerpibooruImagesFilterSelector & Filter.Tag.ToString
+        sSearchQuery = DerpibooruSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+                       DerpibooruSearchPageSelector & iPageIndex.ToString() & _
+                       DerpibooruImagesPerpageSelector & _
+                       DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
+                       DerpibooruImagesSortDirectionSelector & SortDirection.Tag.ToString & _
+                       DerpibooruImagesFilterSelector & IIf(Filter.Tag = -1, UserSpecifiedFilterID.ToString, Filter.Tag.ToString)
         If chkRestrictMinScore.IsChecked Then
             If Not IsNumeric(txtMinScore.Text) Then
                 MessageBox.Show("指定的最低評分值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -212,11 +246,22 @@ Class MainWindow
             JSONResponse = JsonConvert.DeserializeObject(sJSON)
             iImageTotal = JSONResponse("total")
             iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
+            If chkRestrictPageCount.IsChecked Then
+                If iPageTotal > iPageCount Then
+                    iPageTotal = iPageCount
+                    iImageTotal = 50 * iPageCount
+                End If
+            End If
             prgProgress.Maximum = iPageTotal
             prgProgress.Minimum = 0
             prgProgress.Value = 0
             For iPageIndex = 1 To iPageTotal
-                sSearchQuery = DerpibooruSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & DerpibooruSearchPageSelector & iPageIndex.ToString() & DerpibooruImagesPerpageSelector & DerpibooruImagesFilterSelector & Filter.Tag.ToString
+                sSearchQuery = DerpibooruSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+                               DerpibooruSearchPageSelector & iPageIndex.ToString() & _
+                               DerpibooruImagesPerpageSelector & _
+                               DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
+                               DerpibooruImagesSortDirectionSelector & SortDirection.Tag.ToString & _
+                               DerpibooruImagesFilterSelector & IIf(Filter.Tag = -1, UserSpecifiedFilterID.ToString, Filter.Tag.ToString)
                 If chkRestrictMinScore.IsChecked Then
                     If Not IsNumeric(txtMinScore.Text) Then
                         MessageBox.Show("指定的最低評分值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -225,7 +270,7 @@ Class MainWindow
                         Exit Sub
                     End If
                     iMinScore = txtMinScore.Text
-                    'sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString()
+                    'sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString() '由於 API 變更，已廢除。
                 End If
                 If chkRestrictMaxScore.IsChecked Then
                     If Not IsNumeric(txtMaxScore.Text) Then
@@ -235,7 +280,7 @@ Class MainWindow
                         Exit Sub
                     End If
                     iMaxScore = txtMaxScore.Text
-                    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
+                    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString() '由於 API 變更，已廢除。
                 End If
                 If chkRestrictMaxScore.IsChecked And chkRestrictMinScore.IsChecked Then
                     If iMinScore > iMaxScore Then
@@ -269,6 +314,12 @@ Class MainWindow
             JSONResponse = JsonConvert.DeserializeObject(sJSON)
             iImageTotal = JSONResponse("total")
             iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
+            If chkRestrictPageCount.IsChecked Then
+                If iPageTotal > iPageCount Then
+                    iPageTotal = iPageCount
+                    iImageTotal = 50 * iPageCount
+                End If
+            End If
             prgProgress.Maximum = iImageTotal
             prgProgress.Minimum = 0
             prgProgress.Value = 0
@@ -296,7 +347,7 @@ Class MainWindow
                             prgProgress.Value += 1
                             SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                             UpdateLayout()
-                            If IsPauseOn Then
+                            If chkPause.IsChecked Then
                                 If prgProgress.Value Mod iPauseThreshold = 0 Then
                                     System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
                                 End If
@@ -307,13 +358,30 @@ Class MainWindow
                     If chkRestrictMaxScore.IsChecked Then
                         If CInt(JSONResponse("images")(iPhotoIndex)("score")) > iMaxScore Then
                             nIgnored += 1
-                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & JSONResponse("images")(iPhotoIndex)("score").ToString() & " 低於指定的最高評分 " & iMaxScore.ToString() & "。")
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & JSONResponse("images")(iPhotoIndex)("score").ToString() & " 高於指定的最高評分 " & iMaxScore.ToString() & "。")
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
                             SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                             UpdateLayout()
-                            If IsPauseOn Then
+                            If chkPause.IsChecked Then
+                                If prgProgress.Value Mod iPauseThreshold = 0 Then
+                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
+                                End If
+                            End If
+                            Continue For
+                        End If
+                    End If
+                    If chkRestrictMinWilsonScore.IsChecked Then
+                        If CDbl(JSONResponse("images")(iPhotoIndex)("wilson_score")) < sldMinWilsonScore.Value Then
+                            nIgnored += 1
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其質量評分 " & JSONResponse("images")(iPhotoIndex)("wilson_score").ToString() & " 低於指定的最低質量評分 " & sldMinWilsonScore.Value.ToString() & "。")
+                            RefreshURLList()
+                            System.Windows.Forms.Application.DoEvents()
+                            prgProgress.Value += 1
+                            SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                            UpdateLayout()
+                            If chkPause.IsChecked Then
                                 If prgProgress.Value Mod iPauseThreshold = 0 Then
                                     System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
                                 End If
@@ -336,7 +404,7 @@ Class MainWindow
                     prgProgress.Value += 1
                     SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                     UpdateLayout()
-                    If IsPauseOn Then
+                    If chkPause.IsChecked Then
                         If prgProgress.Value Mod iPauseThreshold = 0 Then
                             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
                         End If
@@ -376,5 +444,24 @@ Class MainWindow
 
     Private Sub MainWindow_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         txtSearchKey.Focus()
+    End Sub
+
+    Private Sub chkRestrictPageCount_Click(sender As Object, e As RoutedEventArgs) Handles chkRestrictPageCount.Click
+        txtPageCount.IsEnabled = chkRestrictPageCount.IsChecked
+    End Sub
+
+    Private Sub cmbFilters_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles cmbFilters.SelectionChanged
+        If cmbFilters.SelectedIndex = 6 Then
+            Try
+                UserSpecifiedFilterID = Int(InputBox("請指定您所使用的過濾器的 ID 編號。", "自訂過濾器", 0))
+            Catch ex As Exception
+                UserSpecifiedFilterID = 0
+            End Try
+            MessageBox.Show("目前使用的過濾器 ID 編號為 " & UserSpecifiedFilterID & "。", "自訂過濾器", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        End If
+    End Sub
+
+    Private Sub chkRestrictMinWilsonScore_Click(sender As Object, e As RoutedEventArgs) Handles chkRestrictMinWilsonScore.Click
+        sldMinWilsonScore.IsEnabled = chkRestrictMinWilsonScore.IsChecked
     End Sub
 End Class
