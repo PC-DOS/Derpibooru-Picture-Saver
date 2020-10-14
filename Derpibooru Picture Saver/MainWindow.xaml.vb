@@ -16,7 +16,9 @@ Class MainWindow
     Dim iPauseThreshold As Integer
     Dim iPauseDuration As Integer
     Dim UserSpecifiedFilterID As Integer
+    Dim CurrentSearchPrefix As String = "https://derpibooru.org/api/v1/json/search?q="
     Const DerpibooruSearchPrefix As String = "https://derpibooru.org/api/v1/json/search?q="
+    Const DerpibooruSearchPrefixBackup As String = "https://trixiebooru.org/api/v1/json/search?q="
     Const DerpibooruSearchPageSelector As String = "&page="
     Const DerpibooruImagesPerpageSelector As String = "&per_page=50"
     Const DerpibooruImagesPerpage As Integer = 50
@@ -50,6 +52,7 @@ Class MainWindow
         chkRestrictMinScore.IsEnabled = False
         chkRestrictPageCount.IsEnabled = False
         chkRestrictMinWilsonScore.IsEnabled = False
+        chkUseTrixieBooru.IsEnabled = False
         cmbFilters.IsEnabled = False
         cmbSordField.IsEnabled = False
         cmbSortDirection.IsEnabled = False
@@ -70,6 +73,7 @@ Class MainWindow
         chkRestrictMinScore.IsEnabled = True
         chkRestrictPageCount.IsEnabled = True
         chkRestrictMinWilsonScore.IsEnabled = True
+        chkUseTrixieBooru.IsEnabled = False
         cmbFilters.IsEnabled = True
         cmbSordField.IsEnabled = True
         cmbSortDirection.IsEnabled = True
@@ -159,7 +163,7 @@ Class MainWindow
         Dim SortField As ComboBoxItem = cmbSordField.SelectedItem
         Dim SortDirection As ComboBoxItem = cmbSortDirection.SelectedItem
         Filter = cmbFilters.SelectedItem
-        sSearchQuery = DerpibooruSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+        sSearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
                        DerpibooruSearchPageSelector & iPageIndex.ToString() & _
                        DerpibooruImagesPerpageSelector & _
                        DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
@@ -256,7 +260,7 @@ Class MainWindow
             prgProgress.Minimum = 0
             prgProgress.Value = 0
             For iPageIndex = 1 To iPageTotal
-                sSearchQuery = DerpibooruSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+                sSearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
                                DerpibooruSearchPageSelector & iPageIndex.ToString() & _
                                DerpibooruImagesPerpageSelector & _
                                DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
@@ -443,6 +447,11 @@ Class MainWindow
     End Sub
 
     Private Sub MainWindow_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
+        If chkUseTrixieBooru.IsChecked Then
+            CurrentSearchPrefix = DerpibooruSearchPrefixBackup
+        Else
+            CurrentSearchPrefix = DerpibooruSearchPrefix
+        End If
         txtSearchKey.Focus()
     End Sub
 
@@ -463,5 +472,13 @@ Class MainWindow
 
     Private Sub chkRestrictMinWilsonScore_Click(sender As Object, e As RoutedEventArgs) Handles chkRestrictMinWilsonScore.Click
         sldMinWilsonScore.IsEnabled = chkRestrictMinWilsonScore.IsChecked
+    End Sub
+
+    Private Sub chkUseTrixieBooru_Click(sender As Object, e As RoutedEventArgs) Handles chkUseTrixieBooru.Click
+        If chkUseTrixieBooru.IsChecked Then
+            CurrentSearchPrefix = DerpibooruSearchPrefixBackup
+        Else
+            CurrentSearchPrefix = DerpibooruSearchPrefix
+        End If
     End Sub
 End Class

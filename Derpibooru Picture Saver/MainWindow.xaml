@@ -76,6 +76,7 @@
                 <TextBlock Text="張相片後擱置" VerticalAlignment="Center"/>
                 <TextBox x:Name="txtPauseDuration" Text="5" Width="25" VerticalAlignment="Center" IsEnabled="False" />
                 <TextBlock Text="秒鐘，以避免因持續的下載作業被伺服器封鎖。" VerticalAlignment="Center" />
+                <CheckBox x:Name="chkUseTrixieBooru" Content="使用備用地址 _TrixieBooru.org" VerticalAlignment="Center" Margin="10,0,0,0" />
             </StackPanel>
         </StackPanel>
         <StatusBar DockPanel.Dock="Bottom">
