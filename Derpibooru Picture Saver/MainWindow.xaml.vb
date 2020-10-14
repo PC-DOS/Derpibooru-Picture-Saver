@@ -73,7 +73,7 @@ Class MainWindow
         chkRestrictMinScore.IsEnabled = True
         chkRestrictPageCount.IsEnabled = True
         chkRestrictMinWilsonScore.IsEnabled = True
-        chkUseTrixieBooru.IsEnabled = False
+        chkUseTrixieBooru.IsEnabled = True
         cmbFilters.IsEnabled = True
         cmbSordField.IsEnabled = True
         cmbSortDirection.IsEnabled = True
