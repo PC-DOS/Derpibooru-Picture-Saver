@@ -140,8 +140,20 @@ Class MainWindow
                 SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
-            iPauseThreshold = txtPauseThreshold.Text
-            iPauseDuration = txtPauseDuration.Text
+            If Int(txtPauseDuration.Text) <= 0 Then
+                MessageBox.Show("指定的擱置時間長度必須為正數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                UnlockWindow()
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                Exit Sub
+            End If
+            If Int(txtPauseThreshold.Text) <= 0 Then
+                MessageBox.Show("指定的擱置門限值必須為正數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                UnlockWindow()
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                Exit Sub
+            End If
+            iPauseThreshold = Math.Abs(Int(txtPauseThreshold.Text))
+            iPauseDuration = Math.Abs(Int(txtPauseDuration.Text))
         End If
         If chkRestrictPageCount.IsChecked Then
             If Not IsNumeric(txtPageCount.Text) Then
@@ -151,7 +163,7 @@ Class MainWindow
                 Exit Sub
             End If
             If Int(txtPageCount.Text) < 1 Then
-                MessageBox.Show("指定的下載頁數存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBox.Show("指定的下載頁數必須為正數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 UnlockWindow()
                 SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
