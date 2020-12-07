@@ -459,7 +459,11 @@ Class MainWindow
     End Sub
 
     Private Sub MainWindow_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
-        System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 Or SecurityProtocolType.Tls Or 768 Or 3072
+        Try
+            System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 Or SecurityProtocolType.Tls Or SecurituProctocolTypeExtensions.Tls11 Or SecurituProctocolTypeExtensions.Tls12
+        Catch ex As Exception
+            MessageBox.Show("無法配置應用程式以啟用對 TLS 1.1 和 TLS 1.2 的支援，因為發生例外情況:" & vbCrLf & ex.Message & vbCrLf & vbCrLf & "如果您正在使用 Windows 7 或更早版本的 Windows 作業系統，那麼您可能需要更新您的作業系統。" & vbCrLf & "應用程式仍將繼續啟動，但是可能無法正常使用。", "無法啟用必要的協力組件", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
         If chkUseTrixieBooru.IsChecked Then
             CurrentSearchPrefix = DerpibooruSearchPrefixBackup
         Else
