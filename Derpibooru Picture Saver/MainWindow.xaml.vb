@@ -459,6 +459,7 @@ Class MainWindow
     End Sub
 
     Private Sub MainWindow_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
+        System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 Or SecurityProtocolType.Tls Or SecurityProtocolType.Tls11 Or SecurityProtocolType.Tls12
         If chkUseTrixieBooru.IsChecked Then
             CurrentSearchPrefix = DerpibooruSearchPrefixBackup
         Else

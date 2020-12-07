@@ -2,4 +2,3 @@ D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\bin\Release\Simp
 D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\bin\Release\SimpleHttpRequest.pdb
 D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\obj\Release\SimpleHttpRequest.dll
 D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\obj\Release\SimpleHttpRequest.pdb
-D:\Derpibooru Picture Saver\SimpleHttpRequest\SimpleHttpRequest\obj\Release\SimpleHttpRequest.csprojResolveAssemblyReference.cache
