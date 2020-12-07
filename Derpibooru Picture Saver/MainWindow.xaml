@@ -13,18 +13,22 @@
             <StackPanel Orientation="Horizontal"  Margin="0,5,0,0">
                 <TextBlock Text="排序方式: " Margin="10,0,0,0" VerticalAlignment="Center"/>
                 <ComboBox x:Name="cmbSordField" Margin="5,0,0,0" Width="250" SelectedIndex="0">
-                    <ComboBoxItem Content="建立時間 (Upload date)" Tag="created_at"/>
+                    <ComboBoxItem Content="相片 ID (Image ID)" Tag="id"/>
                     <ComboBoxItem Content="評分 (Score)" Tag="score"/>
                     <ComboBoxItem Content="質量評分 (Wilson Score)" Tag="wilson_score"/>
                     <ComboBoxItem Content="關聯性 (Relevance)" Tag="_score"/>
                     <ComboBoxItem Content="好評數量 (Upvotes)" Tag="upvotes"/>
                     <ComboBoxItem Content="惡評數量 (Downvotes)" Tag="downvotes"/>
-                    <ComboBoxItem Content="修改時間 (Last modification date)" Tag="updated_at"/>
                     <ComboBoxItem Content="被加入 [我的最愛] 的次數 (Fave count)" Tag="faves"/>
-                    <ComboBoxItem Content="最初回應時間 (Initial post date)" Tag="first_seen_at"/>
-                    <ComboBoxItem Content="縱橫比 (Aspect ratio)" Tag="aspect_ratio"/>
+                    <ComboBoxItem Content="建立時間 (Upload date)" Tag="created_at"/>
+                    <ComboBoxItem Content="最後修改時間 (Last modification date)" Tag="updated_at"/>
+                    <ComboBoxItem Content="最初發布時間 (Initial post date)" Tag="first_seen_at"/>
+                    <ComboBoxItem Content="外觀比例 (Aspect ratio)" Tag="aspect_ratio"/>
+                    <ComboBoxItem Content="像素總數 (Pixels)" Tag="pixels"/>
                     <ComboBoxItem Content="寬度 (Width)" Tag="width"/>
                     <ComboBoxItem Content="高度 (Height)" Tag="height"/>
+                    <ComboBoxItem Content="檔案大小 (File size)" Tag="size"/>
+                    <ComboBoxItem Content="持續時間 (Duration)" Tag="duration"/>
                     <ComboBoxItem Content="評論數 (Comment count)" Tag="comment_count"/>
                     <ComboBoxItem Content="關鍵詞數 (Tag count)" Tag="tag_count"/>
                     <ComboBoxItem Content="隨機 (Random)" Tag="random"/>
