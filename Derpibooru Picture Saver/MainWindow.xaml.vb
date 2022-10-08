@@ -53,6 +53,8 @@ Class MainWindow
         chkRestrictPageCount.IsEnabled = False
         chkRestrictMinWilsonScore.IsEnabled = False
         chkUseTrixieBooru.IsEnabled = False
+        chkFilenameNoTags.IsEnabled = False
+        chkSaveMetadataToFile.IsEnabled = False
         cmbFilters.IsEnabled = False
         cmbSordField.IsEnabled = False
         cmbSortDirection.IsEnabled = False
@@ -74,6 +76,8 @@ Class MainWindow
         chkRestrictPageCount.IsEnabled = True
         chkRestrictMinWilsonScore.IsEnabled = True
         chkUseTrixieBooru.IsEnabled = True
+        chkFilenameNoTags.IsEnabled = True
+        chkSaveMetadataToFile.IsEnabled = True
         cmbFilters.IsEnabled = True
         cmbSordField.IsEnabled = True
         cmbSortDirection.IsEnabled = True
@@ -351,7 +355,11 @@ Class MainWindow
                     If Not Directory.Exists(sSaveTo) Then
                         Directory.CreateDirectory(sSaveTo)
                     End If
-                    sImageURL = JSONResponse("images")(iPhotoIndex)("view_url").ToString
+                    If chkFilenameNoTags.IsChecked Then
+                        sImageURL = JSONResponse("images")(iPhotoIndex)("representations")("full").ToString
+                    Else
+                        sImageURL = JSONResponse("images")(iPhotoIndex)("view_url").ToString
+                    End If
                     sImageFileName = GetFileNameFromDircectURL(sImageURL)
                     'MessageBox.Show(sImageFileName)
                     If chkRestrictMinScore.IsChecked Then
@@ -408,6 +416,16 @@ Class MainWindow
                     Dim FileDownloader As New WebClient
                     Try
                         FileDownloader.DownloadFile(sImageURL, sSaveTo & sImageFileName)
+                        If chkSaveMetadataToFile.IsChecked Then
+                            Dim MetadataFilePath As String = sSaveTo & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
+                            Dim MetadataFileStream As New FileStream(MetadataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)
+                            Dim MetadataFileWriter As New StreamWriter(MetadataFileStream)
+                            For Each TagName As String In JSONResponse("images")(iPhotoIndex)("tags").ToArray
+                                MetadataFileWriter.WriteLine(TagName)
+                            Next
+                            MetadataFileWriter.Close()
+                            MetadataFileStream.Close()
+                        End If
                         nSuccess += 1
                         URLList.Add("成功從 " & sImageURL & " 下載相片到 " & sSaveTo & sImageFileName)
                         RefreshURLList()

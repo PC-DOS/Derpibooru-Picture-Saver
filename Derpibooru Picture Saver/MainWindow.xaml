@@ -73,7 +73,7 @@
                 <TextBox x:Name="txtPageCount" Text="10" VerticalAlignment="Center" Width="45" IsEnabled="False" />
                 <TextBlock Text="頁上的相片。" VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,10" >
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0" >
                 <CheckBox x:Name="chkPause" Content="下載時啟用暫止(_P)" VerticalAlignment="Center" Margin="10,0,0,0" />
                 <TextBlock Text="每下載" Padding="5,0,0,0" VerticalAlignment="Center"/>
                 <TextBox x:Name="txtPauseThreshold" Text="100" Width="45" VerticalAlignment="Center" IsEnabled="False" />
@@ -81,6 +81,10 @@
                 <TextBox x:Name="txtPauseDuration" Text="5" Width="25" VerticalAlignment="Center" IsEnabled="False" />
                 <TextBlock Text="秒鐘，以避免因持續的下載作業被伺服器封鎖。" VerticalAlignment="Center" />
                 <CheckBox x:Name="chkUseTrixieBooru" Content="使用備用地址 _TrixieBooru.org" VerticalAlignment="Center" Margin="10,0,0,0" />
+            </StackPanel>
+            <StackPanel  Orientation="Horizontal" Margin="0,5,0,10">
+                <CheckBox x:Name="chkFilenameNoTags" Content="下載的文件名稱不包含標籤資訊(_G)" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <CheckBox x:Name="chkSaveMetadataToFile" Content="建立單獨的文件來儲存標籤資訊(_L)" VerticalAlignment="Center" Margin="10,0,0,0" />
             </StackPanel>
         </StackPanel>
         <StatusBar DockPanel.Dock="Bottom">
