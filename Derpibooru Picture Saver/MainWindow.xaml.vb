@@ -28,7 +28,7 @@ Class MainWindow
     Const DerpibooruImagesMaxScoreSelector As String = "&max_score="
     Const DerpibooruImagesFilterSelector As String = "&filter_id="
     Const DerpibooruImagesSortFieldSelector As String = "&sf="
-    Const DerpibooruImagesSortDirectionSelector As String = "&sq="
+    Const DerpibooruImagesSortDirectionSelector As String = "&sd="
     Private Sub RefreshURLList()
         lstSavedURL.ItemsSource = EmptyList
         lstSavedURL.ItemsSource = URLList
