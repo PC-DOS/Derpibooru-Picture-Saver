@@ -12,6 +12,8 @@ Class MainWindow
     Dim URLList As New List(Of String)
     Dim EmptyList As New List(Of String)
     Dim JSONCache As New List(Of String)
+    Dim iPageIndexBegin As Integer
+    Dim iPageIndexEnd As Integer
     Dim iPageCount As Integer
     Dim iPauseThreshold As Integer
     Dim iPauseDuration As Integer
@@ -44,7 +46,8 @@ Class MainWindow
         txtPauseThreshold.IsEnabled = False
         txtSaveTo.IsEnabled = False
         txtSearchKey.IsEnabled = False
-        txtPageCount.IsEnabled = False
+        txtPageIndexBegin.IsEnabled = False
+        txtPageIndexEnd.IsEnabled = False
         btnBrowse.IsEnabled = False
         btnStart.IsEnabled = False
         chkPause.IsEnabled = False
@@ -55,6 +58,8 @@ Class MainWindow
         chkUseTrixieBooru.IsEnabled = False
         chkFilenameNoTags.IsEnabled = False
         chkSaveMetadataToFile.IsEnabled = False
+        chkThumbnailOnly.IsEnabled = False
+        chkCacheAllPages.IsEnabled = False
         cmbFilters.IsEnabled = False
         cmbSordField.IsEnabled = False
         cmbSortDirection.IsEnabled = False
@@ -67,7 +72,8 @@ Class MainWindow
         txtPauseThreshold.IsEnabled = chkPause.IsChecked
         txtSaveTo.IsEnabled = True
         txtSearchKey.IsEnabled = True
-        txtPageCount.IsEnabled = chkRestrictPageCount.IsChecked
+        txtPageIndexBegin.IsEnabled = chkRestrictPageCount.IsChecked
+        txtPageIndexEnd.IsEnabled = chkRestrictPageCount.IsChecked
         btnBrowse.IsEnabled = True
         btnStart.IsEnabled = True
         chkPause.IsEnabled = True
@@ -78,6 +84,8 @@ Class MainWindow
         chkUseTrixieBooru.IsEnabled = True
         chkFilenameNoTags.IsEnabled = True
         chkSaveMetadataToFile.IsEnabled = True
+        chkThumbnailOnly.IsEnabled = True
+        chkCacheAllPages.IsEnabled = True
         cmbFilters.IsEnabled = True
         cmbSordField.IsEnabled = True
         cmbSortDirection.IsEnabled = True
@@ -125,12 +133,14 @@ Class MainWindow
         prgProgress.Minimum = 0
         prgProgress.Maximum = 100
         prgProgress.Value = 0
+        '檢查搜尋條件是否有效
         If txtSearchKey.Text.Trim() = "" Then
             MessageBox.Show("請輸入搜尋條件。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
             UnlockWindow()
             SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
             Exit Sub
         End If
+        '檢查擱置時間是否有效
         If chkPause.IsChecked Then
             If Not IsNumeric(txtPauseDuration.Text) Then
                 MessageBox.Show("指定的擱置時間長度存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -159,21 +169,31 @@ Class MainWindow
             iPauseThreshold = Math.Abs(Int(txtPauseThreshold.Text))
             iPauseDuration = Math.Abs(Int(txtPauseDuration.Text))
         End If
+        '檢查下載頁數是否有效
         If chkRestrictPageCount.IsChecked Then
-            If Not IsNumeric(txtPageCount.Text) Then
+            If Not IsNumeric(txtPageIndexBegin.Text) Or Not IsNumeric(txtPageIndexEnd.Text) Then
                 MessageBox.Show("指定的下載頁數存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 UnlockWindow()
                 SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
-            If Int(txtPageCount.Text) < 1 Then
+            If Int(txtPageIndexBegin.Text) < 1 Or Int(txtPageIndexEnd.Text) < 1 Then
                 MessageBox.Show("指定的下載頁數必須為正數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 UnlockWindow()
                 SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
-            iPageCount = txtPageCount.Text
+            If Int(txtPageIndexBegin.Text) > Int(txtPageIndexEnd.Text) Then
+                MessageBox.Show("開始的下載頁數必須不大於結束的頁數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                UnlockWindow()
+                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                Exit Sub
+            End If
+            iPageIndexBegin = Int(txtPageIndexBegin.Text)
+            iPageIndexEnd = Int(txtPageIndexEnd.Text)
+            iPageCount = iPageIndexEnd - iPageIndexBegin + 1
         End If
+        '構造檢索請求URL
         Dim iPageIndex As Integer = 1
         Dim Filter As New ComboBoxItem
         Dim SortField As ComboBoxItem = cmbSordField.SelectedItem
@@ -217,6 +237,7 @@ Class MainWindow
             End If
         End If
         'MessageBox.Show(sSearchQuery)
+        '執行第一次檢索，擷取圖像總數資訊
         URLList.Clear()
         RefreshURLList()
         JSONCache.Clear()
@@ -240,7 +261,10 @@ Class MainWindow
         JSONResponse = JsonConvert.DeserializeObject(sJSON)
         'MessageBox.Show(JSONResponse("total").ToString)
         Dim iImageTotal As Integer = JSONResponse("total")
+        Dim iImageCountOnLastPage As Integer = IIf(iImageTotal Mod 50 = 0, 50, iImageTotal Mod 50)
         iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
+        Dim iTotalPageCountToDownload As Integer = iPageTotal
+        Dim iTotalImageCountToDownload As Integer = iImageTotal
         txtStatus.Text = "JSON 檔案擷取完畢，總共搜尋到 " & JSONResponse("total").ToString & " 張相片。一共 " & iPageTotal.ToString & " 個分頁。"
         UpdateLayout()
         If JSONResponse("total").ToString = "0" Then
@@ -250,97 +274,122 @@ Class MainWindow
             Exit Sub
         End If
         If MessageBox.Show("搜尋完畢!" & vbCrLf & "本次搜尋總共搜尋到 " & JSONResponse("total").ToString & " 張相片。一共 " & iPageTotal.ToString & " 個分頁。" & vbCrLf & "開始下載相片嗎?", "下載相片", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = Forms.DialogResult.Yes Then
-            Dim iPhotoIndex As Integer
-            txtStatus.Text = "正在快取搜尋結果。"
-            UpdateLayout()
-            Try
-                sJSON = HttpReq.DoGet(sSearchQuery)
-            Catch ex As Exception
-                MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
-                UnlockWindow()
+            '快取搜尋結果
+            If chkCacheAllPages.IsChecked Then
+                txtStatus.Text = "正在快取搜尋結果。"
                 UpdateLayout()
-                SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
-                Exit Sub
-            End Try
-            JSONResponse = JsonConvert.DeserializeObject(sJSON)
-            iImageTotal = JSONResponse("total")
-            iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
-            If chkRestrictPageCount.IsChecked Then
-                If iPageTotal > iPageCount Then
-                    iPageTotal = iPageCount
-                    iImageTotal = 50 * iPageCount
-                End If
-            End If
-            prgProgress.Maximum = iPageTotal
-            prgProgress.Minimum = 0
-            prgProgress.Value = 0
-            For iPageIndex = 1 To iPageTotal
-                sSearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
-                               DerpibooruSearchPageSelector & iPageIndex.ToString() & _
-                               DerpibooruImagesPerpageSelector & _
-                               DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
-                               DerpibooruImagesSortDirectionSelector & SortDirection.Tag.ToString & _
-                               DerpibooruImagesFilterSelector & IIf(Filter.Tag = -1, UserSpecifiedFilterID.ToString, Filter.Tag.ToString)
-                If chkRestrictMinScore.IsChecked Then
-                    If Not IsNumeric(txtMinScore.Text) Then
-                        MessageBox.Show("指定的最低評分值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                        UnlockWindow()
-                        SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
-                        Exit Sub
-                    End If
-                    iMinScore = txtMinScore.Text
-                    'sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString() '由於 API 變更，已廢除。
-                End If
-                If chkRestrictMaxScore.IsChecked Then
-                    If Not IsNumeric(txtMaxScore.Text) Then
-                        MessageBox.Show("指定的最高評分值存在錯誤。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                        UnlockWindow()
-                        SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
-                        Exit Sub
-                    End If
-                    iMaxScore = txtMaxScore.Text
-                    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString() '由於 API 變更，已廢除。
-                End If
-                If chkRestrictMaxScore.IsChecked And chkRestrictMinScore.IsChecked Then
-                    If iMinScore > iMaxScore Then
-                        If MessageBox.Show("指定的最低評分值大於指定的最高評分值，可能導致例外情況，您確定要繼續嗎?", "警告", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) = Forms.DialogResult.Yes Then
-                            'DoNothing()
-                        Else
-                            UnlockWindow()
-                            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
-                            Exit Sub
-                        End If
-                    End If
-                End If
                 Try
                     sJSON = HttpReq.DoGet(sSearchQuery)
                 Catch ex As Exception
                     MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                    UnlockWindow()
                     txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
+                    UnlockWindow()
                     UpdateLayout()
                     SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                     Exit Sub
                 End Try
-                JSONCache.Add(sJSON)
-                System.Windows.Forms.Application.DoEvents()
-                prgProgress.Value = iPageIndex
-                SetTaskbarProgess(iPageTotal, 0, iPageIndex, Shell.TaskbarItemProgressState.Paused)
-            Next
+                JSONResponse = JsonConvert.DeserializeObject(sJSON)
+                iImageTotal = JSONResponse("total")
+                iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
+                iTotalPageCountToDownload = iPageTotal
+                iTotalImageCountToDownload = iImageTotal
+                '計算實際上需要下載的頁面編號
+                If chkRestrictPageCount.IsChecked Then
+                    If iPageIndexEnd < iPageTotal Then
+                        iTotalPageCountToDownload = iPageCount
+                        iTotalImageCountToDownload = iPageCount * 50
+                    ElseIf iPageIndexEnd <= iPageTotal Then
+                        iTotalPageCountToDownload = iPageCount
+                        iTotalImageCountToDownload = (iPageCount - 1) * 50 + iImageCountOnLastPage
+                    ElseIf iPageIndexBegin <= iPageTotal And iPageIndexEnd > iPageTotal Then
+                        iPageIndexEnd = iPageTotal
+                        iPageCount = iPageIndexEnd - iPageIndexBegin + 1
+                        iTotalPageCountToDownload = iPageCount
+                        iTotalImageCountToDownload = (iPageCount - 1) * 50 + iImageCountOnLastPage
+                    Else
+                        MessageBox.Show("開始的下載頁數必須不大於搜尋結果的最大頁數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        txtStatus.Text = "開始的下載頁數必須不大於搜尋結果的最大頁數。"
+                        UnlockWindow()
+                        SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                        Exit Sub
+                    End If
+                End If
+                prgProgress.Maximum = iTotalPageCountToDownload
+                prgProgress.Minimum = 0
+                prgProgress.Value = 0
+                For iPageIndex = iPageIndexBegin To iPageIndexEnd
+                    sSearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+                                   DerpibooruSearchPageSelector & iPageIndex.ToString() & _
+                                   DerpibooruImagesPerpageSelector & _
+                                   DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
+                                   DerpibooruImagesSortDirectionSelector & SortDirection.Tag.ToString & _
+                                   DerpibooruImagesFilterSelector & IIf(Filter.Tag = -1, UserSpecifiedFilterID.ToString, Filter.Tag.ToString)
+                    '由於API變更,已廢棄
+                    'If chkRestrictMinScore.IsChecked Then
+                    '    iMinScore = txtMinScore.Text
+                    '    'sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString()
+                    'End If
+                    'If chkRestrictMaxScore.IsChecked Then
+                    '    iMaxScore = txtMaxScore.Text
+                    '    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
+                    'End If
+                    Try
+                        sJSON = HttpReq.DoGet(sSearchQuery)
+                    Catch ex As Exception
+                        MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        UnlockWindow()
+                        txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
+                        UpdateLayout()
+                        SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                        Exit Sub
+                    End Try
+                    JSONCache.Add(sJSON)
+                    System.Windows.Forms.Application.DoEvents()
+                    prgProgress.Value = iPageIndex
+                    SetTaskbarProgess(iPageTotal, 0, iPageIndex, Shell.TaskbarItemProgressState.Paused)
+                Next
+            End If
             SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
             txtStatus.Text = "正在從 Derpibooru 下載檔案。"
-            sJSON = JSONCache(0)
-            JSONResponse = JsonConvert.DeserializeObject(sJSON)
-            iImageTotal = JSONResponse("total")
-            iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
-            If chkRestrictPageCount.IsChecked Then
-                If iPageTotal > iPageCount Then
-                    iPageTotal = iPageCount
-                    iImageTotal = 50 * iPageCount
+            If Not chkCacheAllPages.IsChecked Then
+                '未使用快取時，重新計算資料
+                Try
+                    sJSON = HttpReq.DoGet(sSearchQuery)
+                Catch ex As Exception
+                    MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
+                    UnlockWindow()
+                    UpdateLayout()
+                    SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                    Exit Sub
+                End Try
+                JSONResponse = JsonConvert.DeserializeObject(sJSON)
+                iImageTotal = JSONResponse("total")
+                iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
+                iTotalPageCountToDownload = iPageTotal
+                iTotalImageCountToDownload = iImageTotal
+                '計算實際上需要下載的頁面編號
+                If chkRestrictPageCount.IsChecked Then
+                    If iPageIndexEnd < iPageTotal Then
+                        iTotalPageCountToDownload = iPageCount
+                        iTotalImageCountToDownload = iPageCount * 50
+                    ElseIf iPageIndexEnd <= iPageTotal Then
+                        iTotalPageCountToDownload = iPageCount
+                        iTotalImageCountToDownload = (iPageCount - 1) * 50 + iImageCountOnLastPage
+                    ElseIf iPageIndexBegin <= iPageTotal And iPageIndexEnd > iPageTotal Then
+                        iPageIndexEnd = iPageTotal
+                        iPageCount = iPageIndexEnd - iPageIndexBegin + 1
+                        iTotalPageCountToDownload = iPageCount
+                        iTotalImageCountToDownload = (iPageCount - 1) * 50 + iImageCountOnLastPage
+                    Else
+                        MessageBox.Show("開始的下載頁數必須不大於搜尋結果的最大頁數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        UnlockWindow()
+                        SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                        Exit Sub
+                    End If
                 End If
             End If
-            prgProgress.Maximum = iImageTotal
+            prgProgress.Maximum = iTotalImageCountToDownload
             prgProgress.Minimum = 0
             prgProgress.Value = 0
             Dim sImageFileName As String = ""
@@ -348,24 +397,82 @@ Class MainWindow
             Dim nSuccess As Integer = 0
             Dim nFail As Integer = 0
             Dim nIgnored As Integer = 0
-            For iPageIndex = 1 To iPageTotal
-                sJSON = JSONCache(iPageIndex - 1)
+            Dim iPageIndexLoopBegin As Integer
+            Dim iPageIndexLoopEnd As Integer
+            If chkCacheAllPages.IsChecked Then
+                iPageIndexLoopBegin = 1
+                iPageIndexLoopEnd = iTotalPageCountToDownload
+            Else
+                iPageIndexLoopBegin = iPageIndexBegin
+                iPageIndexLoopEnd = iPageIndexEnd
+            End If
+            '周遊每一個頁面
+            For iPageIndex = iPageIndexLoopBegin To iPageIndexLoopEnd
+                '決定是使用快取或是重新擷取資料
+                If chkCacheAllPages.IsChecked Then
+                    sJSON = JSONCache(iPageIndex - 1)
+                Else
+                    sSearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+                                   DerpibooruSearchPageSelector & iPageIndex.ToString() & _
+                                   DerpibooruImagesPerpageSelector & _
+                                   DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
+                                   DerpibooruImagesSortDirectionSelector & SortDirection.Tag.ToString & _
+                                   DerpibooruImagesFilterSelector & IIf(Filter.Tag = -1, UserSpecifiedFilterID.ToString, Filter.Tag.ToString)
+                    '由於API變更,已廢棄
+                    'If chkRestrictMinScore.IsChecked Then
+                    '    iMinScore = txtMinScore.Text
+                    '    'sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString()
+                    'End If
+                    'If chkRestrictMaxScore.IsChecked Then
+                    '    iMaxScore = txtMaxScore.Text
+                    '    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
+                    'End If
+                    Try
+                        sJSON = HttpReq.DoGet(sSearchQuery)
+                    Catch ex As Exception
+                        Dim iIgnoredImageCount As Integer
+                        If iPageIndex = iPageTotal Then
+                            iIgnoredImageCount = iImageCountOnLastPage
+                        Else
+                            iIgnoredImageCount = 50
+                        End If
+                        nIgnored += iIgnoredImageCount
+                        URLList.Add("嘗試擷取頁面" & iPageIndex.ToString & "的資訊時發生例外情況:" & vbCrLf & ex.Message & "，已略過 " & iIgnoredImageCount & " 個下載作業。")
+                        RefreshURLList()
+                        System.Windows.Forms.Application.DoEvents()
+                        prgProgress.Value += iIgnoredImageCount
+                        SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                        UpdateLayout()
+                        Exit Sub
+                    End Try
+                End If
+                '讀取伺服器回應的資料
                 JSONResponse = JsonConvert.DeserializeObject(sJSON)
-                For iPhotoIndex = 0 To IIf(iPageIndex = iPageTotal, iImageTotal - (iPageIndex - 1) * 50 - 1, 49)
+                '周遊每一張影像
+                For Each ImageJSON As JToken In JSONResponse("images").ToArray
+                    '建立下載資料夾
                     If Not Directory.Exists(sSaveTo) Then
                         Directory.CreateDirectory(sSaveTo)
                     End If
+                    '獲取下載URL與目標
                     If chkFilenameNoTags.IsChecked Then
-                        sImageURL = JSONResponse("images")(iPhotoIndex)("representations")("full").ToString
+                        sImageURL = ImageJSON("representations")("full").ToString
+                    ElseIf chkThumbnailOnly.IsChecked Then
+                        sImageURL = ImageJSON("representations")("medium").ToString
                     Else
-                        sImageURL = JSONResponse("images")(iPhotoIndex)("view_url").ToString
+                        sImageURL = ImageJSON("view_url").ToString
                     End If
-                    sImageFileName = GetFileNameFromDircectURL(sImageURL)
+                    If chkFilenameNoTags.IsChecked Then
+                        sImageFileName = GetFileNameFromDircectURL(ImageJSON("representations")("full").ToString)
+                    Else
+                        sImageFileName = GetFileNameFromDircectURL(ImageJSON("view_url").ToString)
+                    End If
                     'MessageBox.Show(sImageFileName)
+                    '檢查是否需要下載
                     If chkRestrictMinScore.IsChecked Then
-                        If CInt(JSONResponse("images")(iPhotoIndex)("score")) < iMinScore Then
+                        If CInt(ImageJSON("score")) < iMinScore Then
                             nIgnored += 1
-                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & JSONResponse("images")(iPhotoIndex)("score").ToString() & " 低於指定的最低評分 " & iMinScore.ToString() & "。")
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & ImageJSON("score").ToString() & " 低於指定的最低評分 " & iMinScore.ToString() & "。")
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
@@ -380,9 +487,9 @@ Class MainWindow
                         End If
                     End If
                     If chkRestrictMaxScore.IsChecked Then
-                        If CInt(JSONResponse("images")(iPhotoIndex)("score")) > iMaxScore Then
+                        If CInt(ImageJSON("score")) > iMaxScore Then
                             nIgnored += 1
-                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & JSONResponse("images")(iPhotoIndex)("score").ToString() & " 高於指定的最高評分 " & iMaxScore.ToString() & "。")
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & ImageJSON("score").ToString() & " 高於指定的最高評分 " & iMaxScore.ToString() & "。")
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
@@ -397,9 +504,9 @@ Class MainWindow
                         End If
                     End If
                     If chkRestrictMinWilsonScore.IsChecked Then
-                        If CDbl(JSONResponse("images")(iPhotoIndex)("wilson_score")) < sldMinWilsonScore.Value Then
+                        If CDbl(ImageJSON("wilson_score")) < sldMinWilsonScore.Value Then
                             nIgnored += 1
-                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其質量評分 " & JSONResponse("images")(iPhotoIndex)("wilson_score").ToString() & " 低於指定的最低質量評分 " & sldMinWilsonScore.Value.ToString() & "。")
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其質量評分 " & ImageJSON("wilson_score").ToString() & " 低於指定的最低質量評分 " & sldMinWilsonScore.Value.ToString() & "。")
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
@@ -413,6 +520,7 @@ Class MainWindow
                             Continue For
                         End If
                     End If
+                    '下載影像
                     Dim FileDownloader As New WebClient
                     Try
                         FileDownloader.DownloadFile(sImageURL, sSaveTo & sImageFileName)
@@ -420,7 +528,7 @@ Class MainWindow
                             Dim MetadataFilePath As String = sSaveTo & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
                             Dim MetadataFileStream As New FileStream(MetadataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)
                             Dim MetadataFileWriter As New StreamWriter(MetadataFileStream)
-                            For Each TagName As String In JSONResponse("images")(iPhotoIndex)("tags").ToArray
+                            For Each TagName As String In ImageJSON("tags").ToArray
                                 MetadataFileWriter.WriteLine(TagName)
                             Next
                             MetadataFileWriter.Close()
@@ -491,7 +599,8 @@ Class MainWindow
     End Sub
 
     Private Sub chkRestrictPageCount_Click(sender As Object, e As RoutedEventArgs) Handles chkRestrictPageCount.Click
-        txtPageCount.IsEnabled = chkRestrictPageCount.IsChecked
+        txtPageIndexBegin.IsEnabled = chkRestrictPageCount.IsChecked
+        txtPageIndexEnd.IsEnabled = chkRestrictPageCount.IsChecked
     End Sub
 
     Private Sub cmbFilters_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles cmbFilters.SelectionChanged

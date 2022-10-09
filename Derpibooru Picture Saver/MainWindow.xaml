@@ -68,9 +68,11 @@
                 <TextBox x:Name="txtSaveTo" Text="C:\Derpibooru Images\" Margin="5,2" IsReadOnly="True"/>
             </DockPanel>
             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                <CheckBox x:Name="chkRestrictPageCount" Content="僅下載排名靠前的相片(_R)" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                <TextBlock Text="僅下載前" VerticalAlignment="Center" Margin="5,0,0,0"/>
-                <TextBox x:Name="txtPageCount" Text="10" VerticalAlignment="Center" Width="45" IsEnabled="False" />
+                <CheckBox x:Name="chkRestrictPageCount" Content="僅下載指定頁數上的相片(_R)" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                <TextBlock Text="僅下載從第" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                <TextBox x:Name="txtPageIndexBegin" Text="1" VerticalAlignment="Center" Width="45" IsEnabled="False" />
+                <TextBlock Text="頁到第" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                <TextBox x:Name="txtPageIndexEnd" Text="10" VerticalAlignment="Center" Width="45" IsEnabled="False" />
                 <TextBlock Text="頁上的相片。" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,5,0,0" >
@@ -85,6 +87,8 @@
             <StackPanel  Orientation="Horizontal" Margin="0,5,0,10">
                 <CheckBox x:Name="chkFilenameNoTags" Content="下載的文件名稱不包含標籤資訊(_G)" VerticalAlignment="Center" Margin="10,0,0,0" />
                 <CheckBox x:Name="chkSaveMetadataToFile" Content="建立單獨的文件來儲存標籤資訊(_L)" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <CheckBox x:Name="chkThumbnailOnly" Content="下載縮圖，而不是完整影像(_T)" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <CheckBox x:Name="chkCacheAllPages" Content="開始下載前快取所有頁面的回應資訊(_C)" VerticalAlignment="Center" Margin="10,0,0,0" />
             </StackPanel>
         </StackPanel>
         <StatusBar DockPanel.Dock="Bottom">
