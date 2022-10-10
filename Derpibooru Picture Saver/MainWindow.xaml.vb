@@ -63,6 +63,7 @@ Class MainWindow
         cmbFilters.IsEnabled = False
         cmbSordField.IsEnabled = False
         cmbSortDirection.IsEnabled = False
+        cmbTagSeparator.IsEnabled = False
         sldMinWilsonScore.IsEnabled = False
     End Sub
     Private Sub UnlockWindow()
@@ -89,6 +90,7 @@ Class MainWindow
         cmbFilters.IsEnabled = True
         cmbSordField.IsEnabled = True
         cmbSortDirection.IsEnabled = True
+        cmbTagSeparator.IsEnabled = chkSaveMetadataToFile.IsChecked
         sldMinWilsonScore.IsEnabled = chkRestrictMinWilsonScore.IsChecked
     End Sub
     Private Sub SetTaskbarProgess(MaxValue As Integer, MinValue As Integer, CurrentValue As Integer, Optional State As Shell.TaskbarItemProgressState = Shell.TaskbarItemProgressState.Normal)
@@ -443,7 +445,7 @@ Class MainWindow
                         prgProgress.Value += iIgnoredImageCount
                         SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                         UpdateLayout()
-                        Exit Sub
+                        Continue For
                     End Try
                 End If
                 '讀取伺服器回應的資料
@@ -455,9 +457,11 @@ Class MainWindow
                         Directory.CreateDirectory(sSaveTo)
                     End If
                     '獲取下載URL與目標
-                    If chkFilenameNoTags.IsChecked Then
+                    If chkFilenameNoTags.IsChecked And Not chkThumbnailOnly.IsChecked Then
                         sImageURL = ImageJSON("representations")("full").ToString
-                    ElseIf chkThumbnailOnly.IsChecked Then
+                    ElseIf chkFilenameNoTags.IsChecked And chkThumbnailOnly.IsChecked Then
+                        sImageURL = ImageJSON("representations")("medium").ToString
+                    ElseIf Not chkFilenameNoTags.IsChecked And chkThumbnailOnly.IsChecked Then
                         sImageURL = ImageJSON("representations")("medium").ToString
                     Else
                         sImageURL = ImageJSON("view_url").ToString
@@ -523,14 +527,31 @@ Class MainWindow
                     '下載影像
                     Dim FileDownloader As New WebClient
                     Try
+                        '下載檔案
                         FileDownloader.DownloadFile(sImageURL, sSaveTo & sImageFileName)
+                        '儲存標籤
                         If chkSaveMetadataToFile.IsChecked Then
                             Dim MetadataFilePath As String = sSaveTo & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
                             Dim MetadataFileStream As New FileStream(MetadataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)
                             Dim MetadataFileWriter As New StreamWriter(MetadataFileStream)
-                            For Each TagName As String In ImageJSON("tags").ToArray
-                                MetadataFileWriter.WriteLine(TagName)
-                            Next
+                            Dim TagList As List(Of JToken) = ImageJSON("tags").ToList
+                            If TagList.Count > 0 Then
+                                For i As Integer = 0 To TagList.Count - 1
+                                    '寫標籤
+                                    MetadataFileWriter.Write(TagList(i))
+                                    '寫分隔符號
+                                    If i <> TagList.Count - 1 Then
+                                        Select Case cmbTagSeparator.SelectedIndex
+                                            Case 0 '逗號
+                                                MetadataFileWriter.Write(", ")
+                                            Case 1 '換行
+                                                MetadataFileWriter.Write(vbCrLf)
+                                            Case Else
+                                                MetadataFileWriter.Write(", ")
+                                        End Select
+                                    End If
+                                Next
+                            End If
                             MetadataFileWriter.Close()
                             MetadataFileStream.Close()
                         End If
@@ -590,11 +611,13 @@ Class MainWindow
         Catch ex As Exception
             MessageBox.Show("無法配置應用程式以啟用對 TLS 1.1 和 TLS 1.2 的支援，因為發生例外情況:" & vbCrLf & ex.Message & vbCrLf & vbCrLf & "如果您正在使用 Windows 7 或更早版本的 Windows 作業系統，那麼您可能需要更新您的作業系統。" & vbCrLf & "應用程式仍將繼續啟動，但是可能無法正常使用。", "無法啟用必要的協力組件", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+        sldMinWilsonScore.IsEnabled = chkRestrictMinWilsonScore.IsChecked
         If chkUseTrixieBooru.IsChecked Then
             CurrentSearchPrefix = DerpibooruSearchPrefixBackup
         Else
             CurrentSearchPrefix = DerpibooruSearchPrefix
         End If
+        cmbTagSeparator.IsEnabled = chkSaveMetadataToFile.IsChecked
         txtSearchKey.Focus()
     End Sub
 
@@ -624,5 +647,9 @@ Class MainWindow
         Else
             CurrentSearchPrefix = DerpibooruSearchPrefix
         End If
+    End Sub
+
+    Private Sub chkSaveMetadataToFile_Click(sender As Object, e As RoutedEventArgs) Handles chkSaveMetadataToFile.Click
+        cmbTagSeparator.IsEnabled = chkSaveMetadataToFile.IsChecked
     End Sub
 End Class
