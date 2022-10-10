@@ -347,8 +347,8 @@ Class MainWindow
                     End Try
                     JSONCache.Add(sJSON)
                     System.Windows.Forms.Application.DoEvents()
-                    prgProgress.Value = iPageIndex
-                    SetTaskbarProgess(iPageTotal, 0, iPageIndex, Shell.TaskbarItemProgressState.Paused)
+                    prgProgress.Value = iPageIndex - iPageIndexBegin + 1
+                    SetTaskbarProgess(iTotalPageCountToDownload, 0, iPageIndex - iPageIndexBegin + 1, Shell.TaskbarItemProgressState.Paused)
                 Next
             End If
             SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
@@ -443,7 +443,7 @@ Class MainWindow
                         RefreshURLList()
                         System.Windows.Forms.Application.DoEvents()
                         prgProgress.Value += iIgnoredImageCount
-                        SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                        SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                         UpdateLayout()
                         Continue For
                     End Try
@@ -480,7 +480,7 @@ Class MainWindow
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
-                            SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                            SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                             UpdateLayout()
                             If chkPause.IsChecked Then
                                 If prgProgress.Value Mod iPauseThreshold = 0 Then
@@ -497,7 +497,7 @@ Class MainWindow
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
-                            SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                            SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                             UpdateLayout()
                             If chkPause.IsChecked Then
                                 If prgProgress.Value Mod iPauseThreshold = 0 Then
@@ -514,7 +514,7 @@ Class MainWindow
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
-                            SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                            SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                             UpdateLayout()
                             If chkPause.IsChecked Then
                                 If prgProgress.Value Mod iPauseThreshold = 0 Then
@@ -565,7 +565,7 @@ Class MainWindow
                     End Try
                     System.Windows.Forms.Application.DoEvents()
                     prgProgress.Value += 1
-                    SetTaskbarProgess(iImageTotal, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                    SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                     UpdateLayout()
                     If chkPause.IsChecked Then
                         If prgProgress.Value Mod iPauseThreshold = 0 Then
