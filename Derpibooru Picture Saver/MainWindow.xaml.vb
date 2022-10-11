@@ -607,7 +607,16 @@ Class MainWindow
                             If TagList.Count > 0 Then
                                 For i As Integer = 0 To TagList.Count - 1
                                     '寫標籤
-                                    MetadataFileWriter.Write(TagList(i))
+                                    Select Case cmbTagSeparator.SelectedIndex
+                                        Case 0 '逗號
+                                            MetadataFileWriter.Write(TagList(i).ToString())
+                                        Case 1 '換行
+                                            MetadataFileWriter.Write(TagList(i).ToString())
+                                        Case 2 '空白
+                                            MetadataFileWriter.Write(TagList(i).ToString().Replace(" ", "_"))
+                                        Case Else
+                                            MetadataFileWriter.Write(TagList(i))
+                                    End Select
                                     '寫分隔符號
                                     If i <> TagList.Count - 1 Then
                                         Select Case cmbTagSeparator.SelectedIndex
@@ -615,6 +624,8 @@ Class MainWindow
                                                 MetadataFileWriter.Write(", ")
                                             Case 1 '換行
                                                 MetadataFileWriter.Write(vbCrLf)
+                                            Case 2 '空白
+                                                MetadataFileWriter.Write(" ")
                                             Case Else
                                                 MetadataFileWriter.Write(", ")
                                         End Select

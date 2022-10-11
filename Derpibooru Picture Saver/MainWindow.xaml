@@ -92,6 +92,7 @@
                 <ComboBox x:Name="cmbTagSeparator" Width="65" SelectedIndex="0" Margin="5,0,0,0" IsEnabled="False">
                     <ComboBoxItem Content="逗號"/>
                     <ComboBoxItem Content="換行"/>
+                    <ComboBoxItem Content="空白"/>
                 </ComboBox>
                 <CheckBox x:Name="chkThumbnailOnly" Content="下載縮圖，而不是完整影像(_T)" VerticalAlignment="Center" Margin="10,0,0,0" />
             </StackPanel>
