@@ -95,6 +95,13 @@ Class MainWindow
         cmbTagSeparator.IsEnabled = chkSaveMetadataToFile.IsChecked
         sldMinWilsonScore.IsEnabled = chkRestrictMinWilsonScore.IsChecked
     End Sub
+    Private Sub SaveSettings()
+        SaveSetting(ApplicationName, SettingsSectionName, LastDownloadPathKey, txtSaveTo.Text)
+    End Sub
+    Public Sub LoadSettings()
+        sSaveTo = GetSetting(ApplicationName, SettingsSectionName, LastDownloadPathKey, LastDownloadPathDefVal)
+        txtSaveTo.Text = sSaveTo
+    End Sub
     Private Sub SetTaskbarProgess(MaxValue As Integer, MinValue As Integer, CurrentValue As Integer, Optional State As Shell.TaskbarItemProgressState = Shell.TaskbarItemProgressState.Normal)
         If MaxValue <= MinValue Or CurrentValue < MinValue Or CurrentValue > MaxValue Then
             Exit Sub
@@ -134,6 +141,7 @@ Class MainWindow
 
     Private Sub btnStart_Click(sender As Object, e As RoutedEventArgs) Handles btnStart.Click
         LockWindow()
+        SaveSettings()
         prgProgress.Minimum = 0
         prgProgress.Maximum = 100
         prgProgress.Value = 0
@@ -456,7 +464,16 @@ Class MainWindow
                 For Each ImageJSON As JToken In JSONResponse("images").ToArray
                     '建立下載資料夾
                     If Not Directory.Exists(sSaveTo) Then
-                        Directory.CreateDirectory(sSaveTo)
+                        Try
+                            Directory.CreateDirectory(sSaveTo)
+                        Catch ex As Exception
+                            MessageBox.Show("無法建立下載資料夾 '" & sSaveTo & "'，發生例外情況: " & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                            URLList.Add("無法建立下載資料夾 '" & sSaveTo & "'，發生例外情況: " & ex.Message)
+                            RefreshURLList()
+                            UnlockWindow()
+                            SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
+                            Exit Sub
+                        End Try
                     End If
                     '獲取下載URL與目標
                     If chkFilenameNoTags.IsChecked And Not chkThumbnailOnly.IsChecked Then
@@ -657,12 +674,17 @@ Class MainWindow
         End
     End Sub
 
+    Private Sub MainWindow_Closing(sender As Object, e As System.ComponentModel.CancelEventArgs) Handles Me.Closing
+        SaveSettings()
+    End Sub
+
     Private Sub MainWindow_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         Try
             System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 Or SecurityProtocolType.Tls Or SecurituProctocolTypeExtensions.Tls11 Or SecurituProctocolTypeExtensions.Tls12
         Catch ex As Exception
             MessageBox.Show("無法配置應用程式以啟用對 TLS 1.1 和 TLS 1.2 的支援，因為發生例外情況:" & vbCrLf & ex.Message & vbCrLf & vbCrLf & "如果您正在使用 Windows 7 或更早版本的 Windows 作業系統，那麼您可能需要更新您的作業系統。" & vbCrLf & "應用程式仍將繼續啟動，但是可能無法正常使用。", "無法啟用必要的協力組件", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+        LoadSettings()
         sldMinWilsonScore.IsEnabled = chkRestrictMinWilsonScore.IsChecked
         If chkUseTrixieBooru.IsChecked Then
             CurrentSearchPrefix = DerpibooruSearchPrefixBackup

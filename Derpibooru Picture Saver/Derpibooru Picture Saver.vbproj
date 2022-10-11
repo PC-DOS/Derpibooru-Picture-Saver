@@ -100,6 +100,7 @@
     </ApplicationDefinition>
     <Compile Include="BitmapHelper.vb" />
     <Compile Include="SecurityProtocolTypeExtensions.vb" />
+    <Compile Include="SettingsProvider.vb" />
     <Compile Include="WebBrowserVersionControl.vb" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
