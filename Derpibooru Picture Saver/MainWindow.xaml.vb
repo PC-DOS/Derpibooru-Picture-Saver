@@ -1,4 +1,6 @@
-﻿Imports System.IO
+﻿Imports System.Drawing
+Imports System.Drawing.Imaging
+Imports System.IO
 Imports System.Windows.Forms
 Imports System.Windows.Window
 Imports System.Net
@@ -529,6 +531,56 @@ Class MainWindow
                     Try
                         '下載檔案
                         FileDownloader.DownloadFile(sImageURL, sSaveTo & sImageFileName)
+                        '一致化縮圖
+                        If chkThumbnailOnly.IsChecked Then
+                            '讀取原始圖像
+                            Dim SourceBitmap As Bitmap = New Bitmap(sSaveTo & sImageFileName)
+                            '添加了黑色邊緣的圖像
+                            Dim iPaddedSize As Integer = Math.Max(SourceBitmap.Width, SourceBitmap.Height)
+                            Dim PaddedBitmap As Bitmap = New Bitmap(iPaddedSize, iPaddedSize)
+                            '初始化
+                            For y As Integer = 0 To PaddedBitmap.Height - 1
+                                For x As Integer = 0 To PaddedBitmap.Width - 1
+                                    PaddedBitmap.SetPixel(x, y, Color.Black)
+                                Next
+                            Next
+                            '複製圖像
+                            If SourceBitmap.Height > SourceBitmap.Width Then '對於較長的圖像，在橫向上居中放置
+                                Dim iSourceX As Integer = 0
+                                Dim iSourceY As Integer = 0
+                                For PaddedY As Integer = 0 To SourceBitmap.Height - 1
+                                    For PaddedX As Integer = Int((iPaddedSize - SourceBitmap.Width) / 2) To Int((iPaddedSize - SourceBitmap.Width) / 2) + SourceBitmap.Width - 1
+                                        PaddedBitmap.SetPixel(PaddedX, PaddedY, SourceBitmap.GetPixel(iSourceX, iSourceY))
+                                        iSourceX += 1
+                                    Next
+                                    iSourceY += 1
+                                    iSourceX = 0
+                                Next
+                            Else '對於較寬的圖像，在縱向上居中放置
+                                Dim iSourceX As Integer = 0
+                                Dim iSourceY As Integer = 0
+                                For PaddedY As Integer = Int((iPaddedSize - SourceBitmap.Height) / 2) To Int((iPaddedSize - SourceBitmap.Height) / 2) + SourceBitmap.Height - 1
+                                    For PaddedX As Integer = 0 To SourceBitmap.Width - 1
+                                        PaddedBitmap.SetPixel(PaddedX, PaddedY, SourceBitmap.GetPixel(iSourceX, iSourceY))
+                                        iSourceX += 1
+                                    Next
+                                    iSourceY += 1
+                                    iSourceX = 0
+                                Next
+                            End If
+                            '壓縮圖像尺寸為512x512
+                            Dim NormalizedBitmap As Bitmap = RescaleBitmap(PaddedBitmap, 512, 512)
+                            '儲存到暫存檔
+                            Dim NormalizedBitmapEncoderParams As New EncoderParameters(1)
+                            NormalizedBitmapEncoderParams.Param(0) = New EncoderParameter(Encoder.Quality, Int(100))
+                            NormalizedBitmap.Save(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg", GetImageEncoderInfo(ImageFormat.Jpeg), NormalizedBitmapEncoderParams)
+                            '取代下載的文件
+                            SourceBitmap.Dispose()
+                            PaddedBitmap.Dispose()
+                            File.Delete(sSaveTo & sImageFileName)
+                            File.Move(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg", sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & ".jpg")
+                            sImageFileName = Path.GetFileNameWithoutExtension(sImageFileName) & ".jpg"
+                        End If
                         '儲存標籤
                         If chkSaveMetadataToFile.IsChecked Then
                             Dim MetadataFilePath As String = sSaveTo & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
