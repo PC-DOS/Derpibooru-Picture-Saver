@@ -546,6 +546,14 @@ Class MainWindow
                     '下載影像
                     Dim FileDownloader As New WebClient
                     Try
+                        '刪除已經存在的檔案
+                        If File.Exists(sSaveTo & sImageFileName) Then
+                            Try
+                                File.Delete(sSaveTo & sImageFileName)
+                            Catch ex As Exception
+
+                            End Try
+                        End If
                         '下載檔案
                         FileDownloader.DownloadFile(sImageURL, sSaveTo & sImageFileName)
                         '一致化縮圖
@@ -590,12 +598,33 @@ Class MainWindow
                             '儲存到暫存檔
                             Dim NormalizedBitmapEncoderParams As New EncoderParameters(1)
                             NormalizedBitmapEncoderParams.Param(0) = New EncoderParameter(Encoder.Quality, Int(100))
+                            If File.Exists(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg") Then
+                                Try
+                                    File.Delete(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg")
+                                Catch ex As Exception
+
+                                End Try
+                            End If
                             NormalizedBitmap.Save(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg", GetImageEncoderInfo(ImageFormat.Jpeg), NormalizedBitmapEncoderParams)
                             '取代下載的文件
                             SourceBitmap.Dispose()
                             PaddedBitmap.Dispose()
-                            File.Delete(sSaveTo & sImageFileName)
+                            Try
+                                File.Delete(sSaveTo & sImageFileName)
+                            Catch ex As Exception
+
+                            End Try
+                            Try
+                                File.Delete(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & ".jpg")
+                            Catch ex As Exception
+
+                            End Try
                             File.Move(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg", sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & ".jpg")
+                            Try
+                                File.Delete(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg")
+                            Catch ex As Exception
+
+                            End Try
                             sImageFileName = Path.GetFileNameWithoutExtension(sImageFileName) & ".jpg"
                         End If
                         '儲存標籤
