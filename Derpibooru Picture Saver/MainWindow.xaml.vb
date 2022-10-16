@@ -98,7 +98,7 @@ Class MainWindow
     Private Sub SaveSettings()
         SaveSetting(ApplicationName, SettingsSectionName, LastDownloadPathKey, txtSaveTo.Text)
     End Sub
-    Public Sub LoadSettings()
+    Private Sub LoadSettings()
         sSaveTo = GetSetting(ApplicationName, SettingsSectionName, LastDownloadPathKey, LastDownloadPathDefVal)
         txtSaveTo.Text = sSaveTo
     End Sub
