@@ -83,6 +83,7 @@
                 <TextBox x:Name="txtPauseDuration" Text="5" Width="25" VerticalAlignment="Center" IsEnabled="False" />
                 <TextBlock Text="秒鐘，以避免被伺服器封鎖。" VerticalAlignment="Center" />
                 <CheckBox x:Name="chkUseTrixieBooru" Content="使用備用地址 _TrixieBooru.org" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <Button x:Name="btnCustomizeAPI" Content="自訂服務地址(_D)" IsEnabled="False"  Margin="5,0,0,0" />
                 <CheckBox x:Name="chkCacheAllPages" Content="開始下載前快取所有頁面的資訊(_C)" VerticalAlignment="Center" Margin="10,0,0,0" />
             </StackPanel>
             <StackPanel  Orientation="Horizontal" Margin="0,5,0,0">
@@ -96,7 +97,7 @@
                 </ComboBox>
             </StackPanel>
             <StackPanel  Orientation="Horizontal" Margin="0,5,0,10">
-                <CheckBox x:Name="chkThumbnailOnly" Content="下載縮圖，而不是完整影像(_T)" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <CheckBox x:Name="chkThumbnailOnly" Content="下載縮圖，而不是完整影像(_H)" VerticalAlignment="Center" Margin="10,0,0,0" />
                 <CheckBox x:Name="chkResizeThumbnail" Content="調整縮圖大小(_Z)" VerticalAlignment="Center" IsEnabled="False" Margin="10,0,0,0" />
                 <TextBlock Text="縮圖寬度: " VerticalAlignment="Center" Margin="5,0,0,0" />
                 <TextBox x:Name="txtThumbnailWidth" Text="768" MinWidth="45" IsEnabled="False" Margin="5,0,0,0" />

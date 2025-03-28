@@ -23,6 +23,7 @@ Class MainWindow
     Dim ThumbnailWidth As Integer
     Dim ThumbnailHeight As Integer
     Dim CurrentSearchPrefix As String = "https://derpibooru.org/api/v1/json/search?q="
+    Dim ThirdPartySearchPrefix As String = ""
     Const DerpibooruSearchPrefix As String = "https://derpibooru.org/api/v1/json/search?q="
     Const DerpibooruSearchPrefixBackup As String = "https://trixiebooru.org/api/v1/json/search?q="
     Const DerpibooruSearchPageSelector As String = "&page="
@@ -60,6 +61,7 @@ Class MainWindow
         chkRestrictPageCount.IsEnabled = False
         chkRestrictMinWilsonScore.IsEnabled = False
         chkUseTrixieBooru.IsEnabled = False
+        btnCustomizeAPI.IsEnabled = False
         chkFilenameNoTags.IsEnabled = False
         chkSaveMetadataToFile.IsEnabled = False
         chkThumbnailOnly.IsEnabled = False
@@ -92,6 +94,7 @@ Class MainWindow
         chkRestrictPageCount.IsEnabled = True
         chkRestrictMinWilsonScore.IsEnabled = True
         chkUseTrixieBooru.IsEnabled = True
+        btnCustomizeAPI.IsEnabled = chkUseTrixieBooru.IsChecked
         chkFilenameNoTags.IsEnabled = True
         chkSaveMetadataToFile.IsEnabled = True
         chkThumbnailOnly.IsEnabled = True
@@ -518,9 +521,21 @@ Class MainWindow
                     If chkFilenameNoTags.IsChecked And Not chkThumbnailOnly.IsChecked Then
                         sImageURL = ImageJSON("representations")("full").ToString
                     ElseIf chkFilenameNoTags.IsChecked And chkThumbnailOnly.IsChecked Then
-                        sImageURL = ImageJSON("representations")("medium").ToString
+                        If ThumbnailWidth <= 512 And ThumbnailHeight <= 512 Then
+                            sImageURL = ImageJSON("representations")("medium").ToString
+                        ElseIf ThumbnailWidth <= 1024 And ThumbnailHeight <= 1024 Then
+                            sImageURL = ImageJSON("representations")("large").ToString
+                        Else
+                            sImageURL = ImageJSON("representations")("full").ToString
+                        End If
                     ElseIf Not chkFilenameNoTags.IsChecked And chkThumbnailOnly.IsChecked Then
-                        sImageURL = ImageJSON("representations")("medium").ToString
+                        If ThumbnailWidth <= 512 And ThumbnailHeight <= 512 Then
+                            sImageURL = ImageJSON("representations")("medium").ToString
+                        ElseIf ThumbnailWidth <= 1024 And ThumbnailHeight <= 1024 Then
+                            sImageURL = ImageJSON("representations")("large").ToString
+                        Else
+                            sImageURL = ImageJSON("representations")("full").ToString
+                        End If
                     Else
                         sImageURL = ImageJSON("view_url").ToString
                     End If
@@ -782,11 +797,20 @@ Class MainWindow
     End Sub
 
     Private Sub chkUseTrixieBooru_Click(sender As Object, e As RoutedEventArgs) Handles chkUseTrixieBooru.Click
+        btnCustomizeAPI.IsEnabled = chkUseTrixieBooru.IsChecked
         If chkUseTrixieBooru.IsChecked Then
-            CurrentSearchPrefix = DerpibooruSearchPrefixBackup
+            CurrentSearchPrefix = IIf(ThirdPartySearchPrefix = "", DerpibooruSearchPrefixBackup, ThirdPartySearchPrefix)
         Else
             CurrentSearchPrefix = DerpibooruSearchPrefix
         End If
+    End Sub
+
+    Private Sub btnCustomizeAPI_Click(sender As Object, e As RoutedEventArgs) Handles btnCustomizeAPI.Click
+        Dim InputBoxResult As String = InputBox("請輸入自訂搜尋服務的 URL。" & vbCrLf & "當前的搜尋服務 URL 為: " & IIf(ThirdPartySearchPrefix = "", DerpibooruSearchPrefixBackup, ThirdPartySearchPrefix), "自訂搜尋服務", IIf(ThirdPartySearchPrefix = "", DerpibooruSearchPrefixBackup, ThirdPartySearchPrefix))
+        If InputBoxResult.Trim() <> "" Then
+            ThirdPartySearchPrefix = InputBoxResult
+        End If
+        CurrentSearchPrefix = IIf(ThirdPartySearchPrefix = "", DerpibooruSearchPrefixBackup, ThirdPartySearchPrefix)
     End Sub
 
     Private Sub chkSaveMetadataToFile_Click(sender As Object, e As RoutedEventArgs) Handles chkSaveMetadataToFile.Click
