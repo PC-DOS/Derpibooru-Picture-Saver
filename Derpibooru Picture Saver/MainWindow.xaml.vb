@@ -7,19 +7,21 @@ Imports System.Net
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 Class MainWindow
-    Dim sSaveTo As String = "C:\Derpibooru Images\"
-    Dim sSearchQuery As String
-    Dim iMinScore As Integer
-    Dim iMaxScore As Integer
+    Dim DownloadedFileSavePath As String = "C:\Derpibooru Images\"
+    Dim SearchQuery As String
+    Dim MinScore As Integer
+    Dim MaxScore As Integer
     Dim URLList As New List(Of String)
     Dim EmptyList As New List(Of String)
     Dim JSONCache As New List(Of String)
-    Dim iPageIndexBegin As Integer
-    Dim iPageIndexEnd As Integer
-    Dim iPageCount As Integer
-    Dim iPauseThreshold As Integer
-    Dim iPauseDuration As Integer
+    Dim PageIndexBegin As Integer
+    Dim PageIndexEnd As Integer
+    Dim PageCount As Integer
+    Dim PauseThreshold As Integer
+    Dim PauseDuration As Integer
     Dim UserSpecifiedFilterID As Integer
+    Dim ThumbnailWidth As Integer
+    Dim ThumbnailHeight As Integer
     Dim CurrentSearchPrefix As String = "https://derpibooru.org/api/v1/json/search?q="
     Const DerpibooruSearchPrefix As String = "https://derpibooru.org/api/v1/json/search?q="
     Const DerpibooruSearchPrefixBackup As String = "https://trixiebooru.org/api/v1/json/search?q="
@@ -61,6 +63,11 @@ Class MainWindow
         chkFilenameNoTags.IsEnabled = False
         chkSaveMetadataToFile.IsEnabled = False
         chkThumbnailOnly.IsEnabled = False
+        chkResizeThumbnail.IsEnabled = False
+        txtThumbnailWidth.IsEnabled = False
+        txtThumbnailHeight.IsEnabled = False
+        chkKeepThumbnailAspectRatio.IsEnabled = False
+        cmbThumbnailFillColor.IsEnabled = False
         chkCacheAllPages.IsEnabled = False
         cmbFilters.IsEnabled = False
         cmbSordField.IsEnabled = False
@@ -88,6 +95,11 @@ Class MainWindow
         chkFilenameNoTags.IsEnabled = True
         chkSaveMetadataToFile.IsEnabled = True
         chkThumbnailOnly.IsEnabled = True
+        chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
+        txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        chkKeepThumbnailAspectRatio.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkKeepThumbnailAspectRatio.IsChecked
         chkCacheAllPages.IsEnabled = True
         cmbFilters.IsEnabled = True
         cmbSordField.IsEnabled = True
@@ -99,8 +111,8 @@ Class MainWindow
         SaveSetting(ApplicationName, SettingsSectionName, LastDownloadPathKey, txtSaveTo.Text)
     End Sub
     Private Sub LoadSettings()
-        sSaveTo = GetSetting(ApplicationName, SettingsSectionName, LastDownloadPathKey, LastDownloadPathDefVal)
-        txtSaveTo.Text = sSaveTo
+        DownloadedFileSavePath = GetSetting(ApplicationName, SettingsSectionName, LastDownloadPathKey, LastDownloadPathDefVal)
+        txtSaveTo.Text = DownloadedFileSavePath
     End Sub
     Private Sub SetTaskbarProgess(MaxValue As Integer, MinValue As Integer, CurrentValue As Integer, Optional State As Shell.TaskbarItemProgressState = Shell.TaskbarItemProgressState.Normal)
         If MaxValue <= MinValue Or CurrentValue < MinValue Or CurrentValue > MaxValue Then
@@ -129,13 +141,19 @@ Class MainWindow
         Dim FolderBrowser As New FolderBrowserDialog
         With FolderBrowser
             .Description = "請指定下載的檔案的儲存位置，然後按一下 [確定] 按鈕。"
+            .ShowNewFolderButton = True
+            Try
+                .SelectedPath = txtSaveTo.Text
+            Catch ex As Exception
+
+            End Try
         End With
         If FolderBrowser.ShowDialog() = Forms.DialogResult.OK Then
-            sSaveTo = FolderBrowser.SelectedPath
-            If sSaveTo(sSaveTo.Length - 1) <> "\" Then
-                sSaveTo = sSaveTo & "\"
+            DownloadedFileSavePath = FolderBrowser.SelectedPath
+            If DownloadedFileSavePath(DownloadedFileSavePath.Length - 1) <> "\" Then
+                DownloadedFileSavePath = DownloadedFileSavePath & "\"
             End If
-            txtSaveTo.Text = sSaveTo
+            txtSaveTo.Text = DownloadedFileSavePath
         End If
     End Sub
 
@@ -178,8 +196,8 @@ Class MainWindow
                 SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
-            iPauseThreshold = Math.Abs(Int(txtPauseThreshold.Text))
-            iPauseDuration = Math.Abs(Int(txtPauseDuration.Text))
+            PauseThreshold = Math.Abs(Int(txtPauseThreshold.Text))
+            PauseDuration = Math.Abs(Int(txtPauseDuration.Text))
         End If
         '檢查下載頁數是否有效
         If chkRestrictPageCount.IsChecked Then
@@ -201,9 +219,9 @@ Class MainWindow
                 SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
-            iPageIndexBegin = Int(txtPageIndexBegin.Text)
-            iPageIndexEnd = Int(txtPageIndexEnd.Text)
-            iPageCount = iPageIndexEnd - iPageIndexBegin + 1
+            PageIndexBegin = Int(txtPageIndexBegin.Text)
+            PageIndexEnd = Int(txtPageIndexEnd.Text)
+            PageCount = PageIndexEnd - PageIndexBegin + 1
         End If
         '構造檢索請求URL
         Dim iPageIndex As Integer = 1
@@ -211,7 +229,7 @@ Class MainWindow
         Dim SortField As ComboBoxItem = cmbSordField.SelectedItem
         Dim SortDirection As ComboBoxItem = cmbSortDirection.SelectedItem
         Filter = cmbFilters.SelectedItem
-        sSearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+        SearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
                        DerpibooruSearchPageSelector & iPageIndex.ToString() & _
                        DerpibooruImagesPerpageSelector & _
                        DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
@@ -224,7 +242,7 @@ Class MainWindow
                 SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
-            iMinScore = txtMinScore.Text
+            MinScore = txtMinScore.Text
             'sSearchQuery = sSearchQuery & DerpibooruImagesMinScoreSelector & iMinScore.ToString()
         End If
         If chkRestrictMaxScore.IsChecked Then
@@ -234,11 +252,11 @@ Class MainWindow
                 SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                 Exit Sub
             End If
-            iMaxScore = txtMaxScore.Text
+            MaxScore = txtMaxScore.Text
             'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
         End If
         If chkRestrictMaxScore.IsChecked And chkRestrictMinScore.IsChecked Then
-            If iMinScore > iMaxScore Then
+            If MinScore > MaxScore Then
                 If MessageBox.Show("指定的最低評分值大於指定的最高評分值，這可能導致例外情況，您確定要繼續嗎?", "警告", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) = Forms.DialogResult.Yes Then
                     'DoNothing()
                 Else
@@ -253,13 +271,13 @@ Class MainWindow
         URLList.Clear()
         RefreshURLList()
         JSONCache.Clear()
-        txtStatus.Text = "正在連線到 " & sSearchQuery & " 以 GET 方法擷取 JSON 檔案。"
+        txtStatus.Text = "正在連線到 " & SearchQuery & " 以 GET 方法擷取 JSON 檔案。"
         UpdateLayout()
         Dim sJSON As String = ""
         Dim iPageTotal As Integer
         Dim HttpReq As New SimpleHttpRequest.HttpJsonRequest
         Try
-            sJSON = HttpReq.DoGet(sSearchQuery)
+            sJSON = HttpReq.DoGet(SearchQuery)
         Catch ex As Exception
             MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
             UnlockWindow()
@@ -291,7 +309,7 @@ Class MainWindow
                 txtStatus.Text = "正在快取搜尋結果。"
                 UpdateLayout()
                 Try
-                    sJSON = HttpReq.DoGet(sSearchQuery)
+                    sJSON = HttpReq.DoGet(SearchQuery)
                 Catch ex As Exception
                     MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                     txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
@@ -307,17 +325,17 @@ Class MainWindow
                 iTotalImageCountToDownload = iImageTotal
                 '計算實際上需要下載的頁面編號
                 If chkRestrictPageCount.IsChecked Then
-                    If iPageIndexEnd < iPageTotal Then
-                        iTotalPageCountToDownload = iPageCount
-                        iTotalImageCountToDownload = iPageCount * 50
-                    ElseIf iPageIndexEnd <= iPageTotal Then
-                        iTotalPageCountToDownload = iPageCount
-                        iTotalImageCountToDownload = (iPageCount - 1) * 50 + iImageCountOnLastPage
-                    ElseIf iPageIndexBegin <= iPageTotal And iPageIndexEnd > iPageTotal Then
-                        iPageIndexEnd = iPageTotal
-                        iPageCount = iPageIndexEnd - iPageIndexBegin + 1
-                        iTotalPageCountToDownload = iPageCount
-                        iTotalImageCountToDownload = (iPageCount - 1) * 50 + iImageCountOnLastPage
+                    If PageIndexEnd < iPageTotal Then
+                        iTotalPageCountToDownload = PageCount
+                        iTotalImageCountToDownload = PageCount * 50
+                    ElseIf PageIndexEnd <= iPageTotal Then
+                        iTotalPageCountToDownload = PageCount
+                        iTotalImageCountToDownload = (PageCount - 1) * 50 + iImageCountOnLastPage
+                    ElseIf PageIndexBegin <= iPageTotal And PageIndexEnd > iPageTotal Then
+                        PageIndexEnd = iPageTotal
+                        PageCount = PageIndexEnd - PageIndexBegin + 1
+                        iTotalPageCountToDownload = PageCount
+                        iTotalImageCountToDownload = (PageCount - 1) * 50 + iImageCountOnLastPage
                     Else
                         MessageBox.Show("開始的下載頁數必須不大於搜尋結果的最大頁數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                         txtStatus.Text = "開始的下載頁數必須不大於搜尋結果的最大頁數。"
@@ -329,8 +347,8 @@ Class MainWindow
                 prgProgress.Maximum = iTotalPageCountToDownload
                 prgProgress.Minimum = 0
                 prgProgress.Value = 0
-                For iPageIndex = iPageIndexBegin To iPageIndexEnd
-                    sSearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+                For iPageIndex = PageIndexBegin To PageIndexEnd
+                    SearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
                                    DerpibooruSearchPageSelector & iPageIndex.ToString() & _
                                    DerpibooruImagesPerpageSelector & _
                                    DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
@@ -346,7 +364,7 @@ Class MainWindow
                     '    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
                     'End If
                     Try
-                        sJSON = HttpReq.DoGet(sSearchQuery)
+                        sJSON = HttpReq.DoGet(SearchQuery)
                     Catch ex As Exception
                         MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                         UnlockWindow()
@@ -357,8 +375,8 @@ Class MainWindow
                     End Try
                     JSONCache.Add(sJSON)
                     System.Windows.Forms.Application.DoEvents()
-                    prgProgress.Value = iPageIndex - iPageIndexBegin + 1
-                    SetTaskbarProgess(iTotalPageCountToDownload, 0, iPageIndex - iPageIndexBegin + 1, Shell.TaskbarItemProgressState.Paused)
+                    prgProgress.Value = iPageIndex - PageIndexBegin + 1
+                    SetTaskbarProgess(iTotalPageCountToDownload, 0, iPageIndex - PageIndexBegin + 1, Shell.TaskbarItemProgressState.Paused)
                 Next
             End If
             SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
@@ -366,7 +384,7 @@ Class MainWindow
             If Not chkCacheAllPages.IsChecked Then
                 '未使用快取時，重新計算資料
                 Try
-                    sJSON = HttpReq.DoGet(sSearchQuery)
+                    sJSON = HttpReq.DoGet(SearchQuery)
                 Catch ex As Exception
                     MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                     txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
@@ -382,17 +400,17 @@ Class MainWindow
                 iTotalImageCountToDownload = iImageTotal
                 '計算實際上需要下載的頁面編號
                 If chkRestrictPageCount.IsChecked Then
-                    If iPageIndexEnd < iPageTotal Then
-                        iTotalPageCountToDownload = iPageCount
-                        iTotalImageCountToDownload = iPageCount * 50
-                    ElseIf iPageIndexEnd <= iPageTotal Then
-                        iTotalPageCountToDownload = iPageCount
-                        iTotalImageCountToDownload = (iPageCount - 1) * 50 + iImageCountOnLastPage
-                    ElseIf iPageIndexBegin <= iPageTotal And iPageIndexEnd > iPageTotal Then
-                        iPageIndexEnd = iPageTotal
-                        iPageCount = iPageIndexEnd - iPageIndexBegin + 1
-                        iTotalPageCountToDownload = iPageCount
-                        iTotalImageCountToDownload = (iPageCount - 1) * 50 + iImageCountOnLastPage
+                    If PageIndexEnd < iPageTotal Then
+                        iTotalPageCountToDownload = PageCount
+                        iTotalImageCountToDownload = PageCount * 50
+                    ElseIf PageIndexEnd <= iPageTotal Then
+                        iTotalPageCountToDownload = PageCount
+                        iTotalImageCountToDownload = (PageCount - 1) * 50 + iImageCountOnLastPage
+                    ElseIf PageIndexBegin <= iPageTotal And PageIndexEnd > iPageTotal Then
+                        PageIndexEnd = iPageTotal
+                        PageCount = PageIndexEnd - PageIndexBegin + 1
+                        iTotalPageCountToDownload = PageCount
+                        iTotalImageCountToDownload = (PageCount - 1) * 50 + iImageCountOnLastPage
                     Else
                         MessageBox.Show("開始的下載頁數必須不大於搜尋結果的最大頁數。", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                         UnlockWindow()
@@ -415,8 +433,8 @@ Class MainWindow
                 iPageIndexLoopBegin = 1
                 iPageIndexLoopEnd = iTotalPageCountToDownload
             Else
-                iPageIndexLoopBegin = iPageIndexBegin
-                iPageIndexLoopEnd = iPageIndexEnd
+                iPageIndexLoopBegin = PageIndexBegin
+                iPageIndexLoopEnd = PageIndexEnd
             End If
             '周遊每一個頁面
             For iPageIndex = iPageIndexLoopBegin To iPageIndexLoopEnd
@@ -424,7 +442,7 @@ Class MainWindow
                 If chkCacheAllPages.IsChecked Then
                     sJSON = JSONCache(iPageIndex - 1)
                 Else
-                    sSearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
+                    SearchQuery = CurrentSearchPrefix & txtSearchKey.Text.Trim().Replace(" ", "+") & _
                                    DerpibooruSearchPageSelector & iPageIndex.ToString() & _
                                    DerpibooruImagesPerpageSelector & _
                                    DerpibooruImagesSortFieldSelector & SortField.Tag.ToString & _
@@ -440,7 +458,7 @@ Class MainWindow
                     '    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
                     'End If
                     Try
-                        sJSON = HttpReq.DoGet(sSearchQuery)
+                        sJSON = HttpReq.DoGet(SearchQuery)
                     Catch ex As Exception
                         Dim iIgnoredImageCount As Integer
                         If iPageIndex = iPageTotal Then
@@ -463,12 +481,12 @@ Class MainWindow
                 '周遊每一張影像
                 For Each ImageJSON As JToken In JSONResponse("images").ToArray
                     '建立下載資料夾
-                    If Not Directory.Exists(sSaveTo) Then
+                    If Not Directory.Exists(DownloadedFileSavePath) Then
                         Try
-                            Directory.CreateDirectory(sSaveTo)
+                            Directory.CreateDirectory(DownloadedFileSavePath)
                         Catch ex As Exception
-                            MessageBox.Show("無法建立下載資料夾 '" & sSaveTo & "'，發生例外情況: " & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                            URLList.Add("無法建立下載資料夾 '" & sSaveTo & "'，發生例外情況: " & ex.Message)
+                            MessageBox.Show("無法建立下載資料夾 '" & DownloadedFileSavePath & "'，發生例外情況: " & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                            URLList.Add("無法建立下載資料夾 '" & DownloadedFileSavePath & "'，發生例外情況: " & ex.Message)
                             RefreshURLList()
                             UnlockWindow()
                             SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
@@ -493,34 +511,34 @@ Class MainWindow
                     'MessageBox.Show(sImageFileName)
                     '檢查是否需要下載
                     If chkRestrictMinScore.IsChecked Then
-                        If CInt(ImageJSON("score")) < iMinScore Then
+                        If CInt(ImageJSON("score")) < MinScore Then
                             nIgnored += 1
-                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & ImageJSON("score").ToString() & " 低於指定的最低評分 " & iMinScore.ToString() & "。")
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & ImageJSON("score").ToString() & " 低於指定的最低評分 " & MinScore.ToString() & "。")
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
                             SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                             UpdateLayout()
                             If chkPause.IsChecked Then
-                                If prgProgress.Value Mod iPauseThreshold = 0 Then
-                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
+                                If prgProgress.Value Mod PauseThreshold = 0 Then
+                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(PauseDuration))
                                 End If
                             End If
                             Continue For
                         End If
                     End If
                     If chkRestrictMaxScore.IsChecked Then
-                        If CInt(ImageJSON("score")) > iMaxScore Then
+                        If CInt(ImageJSON("score")) > MaxScore Then
                             nIgnored += 1
-                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & ImageJSON("score").ToString() & " 高於指定的最高評分 " & iMaxScore.ToString() & "。")
+                            URLList.Add("已略過 " & sImageURL & " 的下載作業。因為其評分 " & ImageJSON("score").ToString() & " 高於指定的最高評分 " & MaxScore.ToString() & "。")
                             RefreshURLList()
                             System.Windows.Forms.Application.DoEvents()
                             prgProgress.Value += 1
                             SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                             UpdateLayout()
                             If chkPause.IsChecked Then
-                                If prgProgress.Value Mod iPauseThreshold = 0 Then
-                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
+                                If prgProgress.Value Mod PauseThreshold = 0 Then
+                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(PauseDuration))
                                 End If
                             End If
                             Continue For
@@ -536,8 +554,8 @@ Class MainWindow
                             SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                             UpdateLayout()
                             If chkPause.IsChecked Then
-                                If prgProgress.Value Mod iPauseThreshold = 0 Then
-                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
+                                If prgProgress.Value Mod PauseThreshold = 0 Then
+                                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(PauseDuration))
                                 End If
                             End If
                             Continue For
@@ -547,89 +565,76 @@ Class MainWindow
                     Dim FileDownloader As New WebClient
                     Try
                         '刪除已經存在的檔案
-                        If File.Exists(sSaveTo & sImageFileName) Then
+                        If File.Exists(DownloadedFileSavePath & sImageFileName) Then
                             Try
-                                File.Delete(sSaveTo & sImageFileName)
+                                File.Delete(DownloadedFileSavePath & sImageFileName)
                             Catch ex As Exception
 
                             End Try
                         End If
                         '下載檔案
-                        FileDownloader.DownloadFile(sImageURL, sSaveTo & sImageFileName)
+                        FileDownloader.DownloadFile(sImageURL, DownloadedFileSavePath & sImageFileName)
                         '一致化縮圖
-                        If chkThumbnailOnly.IsChecked Then
+                        If chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked Then
                             '讀取原始圖像
-                            Dim SourceBitmap As Bitmap = New Bitmap(sSaveTo & sImageFileName)
-                            '添加了黑色邊緣的圖像
-                            Dim iPaddedSize As Integer = Math.Max(SourceBitmap.Width, SourceBitmap.Height)
-                            Dim PaddedBitmap As Bitmap = New Bitmap(iPaddedSize, iPaddedSize)
-                            '初始化
-                            For y As Integer = 0 To PaddedBitmap.Height - 1
-                                For x As Integer = 0 To PaddedBitmap.Width - 1
-                                    PaddedBitmap.SetPixel(x, y, Color.Black)
-                                Next
-                            Next
-                            '複製圖像
-                            If SourceBitmap.Height > SourceBitmap.Width Then '對於較長的圖像，在橫向上居中放置
-                                Dim iSourceX As Integer = 0
-                                Dim iSourceY As Integer = 0
-                                For PaddedY As Integer = 0 To SourceBitmap.Height - 1
-                                    For PaddedX As Integer = Int((iPaddedSize - SourceBitmap.Width) / 2) To Int((iPaddedSize - SourceBitmap.Width) / 2) + SourceBitmap.Width - 1
-                                        PaddedBitmap.SetPixel(PaddedX, PaddedY, SourceBitmap.GetPixel(iSourceX, iSourceY))
-                                        iSourceX += 1
-                                    Next
-                                    iSourceY += 1
-                                    iSourceX = 0
-                                Next
-                            Else '對於較寬的圖像，在縱向上居中放置
-                                Dim iSourceX As Integer = 0
-                                Dim iSourceY As Integer = 0
-                                For PaddedY As Integer = Int((iPaddedSize - SourceBitmap.Height) / 2) To Int((iPaddedSize - SourceBitmap.Height) / 2) + SourceBitmap.Height - 1
-                                    For PaddedX As Integer = 0 To SourceBitmap.Width - 1
-                                        PaddedBitmap.SetPixel(PaddedX, PaddedY, SourceBitmap.GetPixel(iSourceX, iSourceY))
-                                        iSourceX += 1
-                                    Next
-                                    iSourceY += 1
-                                    iSourceX = 0
-                                Next
+                            Dim SourceBitmap As Bitmap = New Bitmap(DownloadedFileSavePath & sImageFileName)
+
+                            '決定一致化策略
+                            Dim NormalizedBitmap As Bitmap
+                            If chkKeepThumbnailAspectRatio.IsChecked Then
+                                '若使用者不需要保持外觀比例，填充或裁切圖像
+                                Dim PaddedBitmapWidth As Integer
+                                Dim PaddedBitmapHeight As Integer
+                                If SourceBitmap.Width >= SourceBitmap.Height Then
+                                    PaddedBitmapWidth = SourceBitmap.Width
+                                    PaddedBitmapHeight = SourceBitmap.Width * ThumbnailHeight / ThumbnailWidth
+                                Else
+                                    PaddedBitmapHeight = SourceBitmap.Height
+                                    PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
+                                End If
+                                Dim ThumbnailFillColorItem As ComboBoxItem = cmbThumbnailFillColor.SelectedItem
+                                Dim ThumbnailFillColor As Color = ThumbnailFillColorItem.Tag
+                                Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, ThumbnailFillColor, ContentAlignment.MiddleCenter)
+                                NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
+                            Else
+                                '若使用者不需要保持外觀比例，直接調整圖像尺寸
+                                NormalizedBitmap = RescaleBitmap(SourceBitmap, ThumbnailWidth, ThumbnailHeight)
                             End If
-                            '壓縮圖像尺寸為512x512
-                            Dim NormalizedBitmap As Bitmap = RescaleBitmap(PaddedBitmap, 512, 512)
+
                             '儲存到暫存檔
                             Dim NormalizedBitmapEncoderParams As New EncoderParameters(1)
                             NormalizedBitmapEncoderParams.Param(0) = New EncoderParameter(Encoder.Quality, Int(100))
-                            If File.Exists(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg") Then
+                            If File.Exists(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png") Then
                                 Try
-                                    File.Delete(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg")
+                                    File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png")
                                 Catch ex As Exception
 
                                 End Try
                             End If
-                            NormalizedBitmap.Save(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg", GetImageEncoderInfo(ImageFormat.Jpeg), NormalizedBitmapEncoderParams)
+                            NormalizedBitmap.Save(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png", GetImageEncoderInfo(ImageFormat.Png), NormalizedBitmapEncoderParams)
                             '取代下載的文件
                             SourceBitmap.Dispose()
-                            PaddedBitmap.Dispose()
                             Try
-                                File.Delete(sSaveTo & sImageFileName)
+                                File.Delete(DownloadedFileSavePath & sImageFileName)
                             Catch ex As Exception
 
                             End Try
                             Try
-                                File.Delete(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & ".jpg")
+                                File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & ".png")
                             Catch ex As Exception
 
                             End Try
-                            File.Move(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg", sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & ".jpg")
+                            File.Move(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png", DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & ".png")
                             Try
-                                File.Delete(sSaveTo & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.jpg")
+                                File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png")
                             Catch ex As Exception
 
                             End Try
-                            sImageFileName = Path.GetFileNameWithoutExtension(sImageFileName) & ".jpg"
+                            sImageFileName = Path.GetFileNameWithoutExtension(sImageFileName) & ".png"
                         End If
                         '儲存標籤
                         If chkSaveMetadataToFile.IsChecked Then
-                            Dim MetadataFilePath As String = sSaveTo & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
+                            Dim MetadataFilePath As String = DownloadedFileSavePath & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
                             Dim MetadataFileStream As New FileStream(MetadataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)
                             Dim MetadataFileWriter As New StreamWriter(MetadataFileStream)
                             Dim TagList As List(Of JToken) = ImageJSON("tags").ToList
@@ -665,7 +670,7 @@ Class MainWindow
                             MetadataFileStream.Close()
                         End If
                         nSuccess += 1
-                        URLList.Add("成功從 " & sImageURL & " 下載相片到 " & sSaveTo & sImageFileName)
+                        URLList.Add("成功從 " & sImageURL & " 下載相片到 " & DownloadedFileSavePath & sImageFileName)
                         RefreshURLList()
                     Catch ex As Exception
                         URLList.Add("從 " & sImageURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
@@ -677,8 +682,8 @@ Class MainWindow
                     SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
                     UpdateLayout()
                     If chkPause.IsChecked Then
-                        If prgProgress.Value Mod iPauseThreshold = 0 Then
-                            System.Threading.Thread.Sleep(TimeSpan.FromSeconds(iPauseDuration))
+                        If prgProgress.Value Mod PauseThreshold = 0 Then
+                            System.Threading.Thread.Sleep(TimeSpan.FromSeconds(PauseDuration))
                         End If
                     End If
                 Next
@@ -765,5 +770,53 @@ Class MainWindow
 
     Private Sub chkSaveMetadataToFile_Click(sender As Object, e As RoutedEventArgs) Handles chkSaveMetadataToFile.Click
         cmbTagSeparator.IsEnabled = chkSaveMetadataToFile.IsChecked
+    End Sub
+
+    Private Sub chkThumbnailOnly_Click(sender As Object, e As RoutedEventArgs) Handles chkThumbnailOnly.Click
+        chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
+        txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        chkKeepThumbnailAspectRatio.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkKeepThumbnailAspectRatio.IsChecked
+    End Sub
+
+    Private Sub chkResizeThumbnail_Click(sender As Object, e As RoutedEventArgs) Handles chkResizeThumbnail.Click
+        chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
+        txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        chkKeepThumbnailAspectRatio.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkKeepThumbnailAspectRatio.IsChecked
+    End Sub
+
+    Private Sub chkKeepThumbnailAspectRatio_Click(sender As Object, e As RoutedEventArgs) Handles chkKeepThumbnailAspectRatio.Click
+        chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
+        txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        chkKeepThumbnailAspectRatio.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkKeepThumbnailAspectRatio.IsChecked
+    End Sub
+
+    Private Sub txtThumbnailWidth_LostFocus(sender As Object, e As RoutedEventArgs) Handles txtThumbnailWidth.LostFocus
+        Try
+            ThumbnailWidth = Int(txtThumbnailWidth.Text)
+            If ThumbnailWidth <= 0 Then
+                ThumbnailWidth = 1
+            End If
+        Catch ex As Exception
+            ThumbnailWidth = 1
+        End Try
+        txtThumbnailWidth.Text = ThumbnailWidth.ToString()
+    End Sub
+
+    Private Sub txtThumbnailHeight_LostFocus(sender As Object, e As RoutedEventArgs) Handles txtThumbnailHeight.LostFocus
+        Try
+            ThumbnailHeight = Int(txtThumbnailHeight.Text)
+            If ThumbnailHeight <= 0 Then
+                ThumbnailHeight = 1
+            End If
+        Catch ex As Exception
+            ThumbnailHeight = 1
+        End Try
+        txtThumbnailHeight.Text = ThumbnailHeight.ToString()
     End Sub
 End Class
