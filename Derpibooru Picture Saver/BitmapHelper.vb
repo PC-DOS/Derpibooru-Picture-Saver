@@ -19,7 +19,7 @@ Module BitmapHelper
         End If
 
         Dim PaddedBitmap As Bitmap = New Bitmap(NewWidth, NewHeight)
-        '初始化
+        '填充背景色彩
         For y As Integer = 0 To PaddedBitmap.Height - 1
             For x As Integer = 0 To PaddedBitmap.Width - 1
                 PaddedBitmap.SetPixel(x, y, BackgroundColor)
