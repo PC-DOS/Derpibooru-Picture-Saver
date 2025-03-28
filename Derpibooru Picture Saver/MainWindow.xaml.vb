@@ -141,7 +141,6 @@ Class MainWindow
         Dim FolderBrowser As New FolderBrowserDialog
         With FolderBrowser
             .Description = "請指定下載的檔案的儲存位置，然後按一下 [確定] 按鈕。"
-            .ShowNewFolderButton = True
             Try
                 .SelectedPath = txtSaveTo.Text
             Catch ex As Exception
