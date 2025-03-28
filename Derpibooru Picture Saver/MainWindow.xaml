@@ -106,9 +106,9 @@
                 <CheckBox x:Name="chkKeepThumbnailAspectRatio" Content="維持外觀比例(_K)" IsEnabled="False" VerticalAlignment="Center" Margin="5,0,0,0" />
                 <TextBlock Text="邊緣填充顏色: " VerticalAlignment="Center" Margin="5,0,0,0"/>
                 <ComboBox x:Name="cmbThumbnailFillColor" Width="65" SelectedIndex="2" Margin="5,0,0,0" IsEnabled="False">
-                    <ComboBoxItem Content="黑色" Tag="Color.Black"/>
-                    <ComboBoxItem Content="白色" Tag="Color.White"/>
-                    <ComboBoxItem Content="透明" Tag="Color.Transparent"/>
+                    <ComboBoxItem Content="黑色"/>
+                    <ComboBoxItem Content="白色"/>
+                    <ComboBoxItem Content="透明"/>
                 </ComboBox>
             </StackPanel>
         </StackPanel>

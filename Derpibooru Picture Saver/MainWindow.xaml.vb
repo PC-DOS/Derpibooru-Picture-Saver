@@ -628,8 +628,17 @@ Class MainWindow
                                     PaddedBitmapHeight = SourceBitmap.Height
                                     PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
                                 End If
-                                Dim ThumbnailFillColorItem As ComboBoxItem = cmbThumbnailFillColor.SelectedItem
-                                Dim ThumbnailFillColor As Color = ThumbnailFillColorItem.Tag
+                                Dim ThumbnailFillColor As Color
+                                Select Case cmbThumbnailFillColor.SelectedIndex
+                                    Case 0
+                                        ThumbnailFillColor = Color.Black
+                                    Case 1
+                                        ThumbnailFillColor = Color.White
+                                    Case 2
+                                        ThumbnailFillColor = Color.Transparent
+                                    Case Else
+                                        ThumbnailFillColor = Color.Transparent
+                                End Select
                                 Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, ThumbnailFillColor, ContentAlignment.MiddleCenter)
                                 NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
                             Else
@@ -709,6 +718,7 @@ Class MainWindow
                         URLList.Add("成功從 " & sImageURL & " 下載相片到 " & DownloadedFileSavePath & sImageFileName)
                         RefreshURLList()
                     Catch ex As Exception
+                        MsgBox(ex.Message & vbCrLf & ex.Source & vbCrLf & ex.StackTrace)
                         URLList.Add("從 " & sImageURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
                         RefreshURLList()
                         nFail += 1
