@@ -137,6 +137,27 @@ Class MainWindow
         Next
         Return URL.Substring(i + 1)
     End Function
+    Private Sub ValidateThumbnailSizes()
+        Try
+            ThumbnailWidth = Int(txtThumbnailWidth.Text)
+            If ThumbnailWidth <= 0 Then
+                ThumbnailWidth = 1
+            End If
+        Catch ex As Exception
+            ThumbnailWidth = 1
+        End Try
+        txtThumbnailWidth.Text = ThumbnailWidth.ToString()
+
+        Try
+            ThumbnailHeight = Int(txtThumbnailHeight.Text)
+            If ThumbnailHeight <= 0 Then
+                ThumbnailHeight = 1
+            End If
+        Catch ex As Exception
+            ThumbnailHeight = 1
+        End Try
+        txtThumbnailHeight.Text = ThumbnailHeight.ToString()
+    End Sub
     Private Sub btnBrowse_Click(sender As Object, e As RoutedEventArgs) Handles btnBrowse.Click
         Dim FolderBrowser As New FolderBrowserDialog
         With FolderBrowser
@@ -158,6 +179,7 @@ Class MainWindow
 
     Private Sub btnStart_Click(sender As Object, e As RoutedEventArgs) Handles btnStart.Click
         LockWindow()
+        ValidateThumbnailSizes()
         SaveSettings()
         prgProgress.Minimum = 0
         prgProgress.Maximum = 100
@@ -796,26 +818,10 @@ Class MainWindow
     End Sub
 
     Private Sub txtThumbnailWidth_LostFocus(sender As Object, e As RoutedEventArgs) Handles txtThumbnailWidth.LostFocus
-        Try
-            ThumbnailWidth = Int(txtThumbnailWidth.Text)
-            If ThumbnailWidth <= 0 Then
-                ThumbnailWidth = 1
-            End If
-        Catch ex As Exception
-            ThumbnailWidth = 1
-        End Try
-        txtThumbnailWidth.Text = ThumbnailWidth.ToString()
+        ValidateThumbnailSizes()
     End Sub
 
     Private Sub txtThumbnailHeight_LostFocus(sender As Object, e As RoutedEventArgs) Handles txtThumbnailHeight.LostFocus
-        Try
-            ThumbnailHeight = Int(txtThumbnailHeight.Text)
-            If ThumbnailHeight <= 0 Then
-                ThumbnailHeight = 1
-            End If
-        Catch ex As Exception
-            ThumbnailHeight = 1
-        End Try
-        txtThumbnailHeight.Text = ThumbnailHeight.ToString()
+        ValidateThumbnailSizes()
     End Sub
 End Class
