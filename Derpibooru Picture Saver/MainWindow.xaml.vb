@@ -718,7 +718,7 @@ Class MainWindow
                         URLList.Add("成功從 " & sImageURL & " 下載相片到 " & DownloadedFileSavePath & sImageFileName)
                         RefreshURLList()
                     Catch ex As Exception
-                        MsgBox(ex.Message & vbCrLf & ex.Source & vbCrLf & ex.StackTrace)
+                        'MsgBox(ex.Message & vbCrLf & ex.Source & vbCrLf & ex.StackTrace)
                         URLList.Add("從 " & sImageURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
                         RefreshURLList()
                         nFail += 1
