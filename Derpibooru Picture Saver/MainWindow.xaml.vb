@@ -68,7 +68,7 @@ Class MainWindow
         chkResizeThumbnail.IsEnabled = False
         txtThumbnailWidth.IsEnabled = False
         txtThumbnailHeight.IsEnabled = False
-        chkKeepThumbnailAspectRatio.IsEnabled = False
+        cmbThumbnailResizingMethod.IsEnabled = False
         cmbThumbnailFillColor.IsEnabled = False
         chkCacheAllPages.IsEnabled = False
         cmbFilters.IsEnabled = False
@@ -101,8 +101,8 @@ Class MainWindow
         chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
         txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        chkKeepThumbnailAspectRatio.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkKeepThumbnailAspectRatio.IsChecked
+        cmbThumbnailResizingMethod.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
         chkCacheAllPages.IsEnabled = True
         cmbFilters.IsEnabled = True
         cmbSordField.IsEnabled = True
@@ -617,34 +617,51 @@ Class MainWindow
 
                             '決定一致化策略
                             Dim NormalizedBitmap As Bitmap
-                            If chkKeepThumbnailAspectRatio.IsChecked Then
-                                '若使用者不需要保持外觀比例，填充或裁切圖像
-                                Dim PaddedBitmapWidth As Integer
-                                Dim PaddedBitmapHeight As Integer
-                                If SourceBitmap.Width >= SourceBitmap.Height Then
-                                    PaddedBitmapWidth = SourceBitmap.Width
-                                    PaddedBitmapHeight = SourceBitmap.Width * ThumbnailHeight / ThumbnailWidth
-                                Else
-                                    PaddedBitmapHeight = SourceBitmap.Height
-                                    PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
-                                End If
-                                Dim ThumbnailFillColor As Color
-                                Select Case cmbThumbnailFillColor.SelectedIndex
-                                    Case 0
-                                        ThumbnailFillColor = Color.Black
-                                    Case 1
-                                        ThumbnailFillColor = Color.White
-                                    Case 2
-                                        ThumbnailFillColor = Color.Transparent
-                                    Case Else
-                                        ThumbnailFillColor = Color.Transparent
-                                End Select
-                                Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, ThumbnailFillColor, ContentAlignment.MiddleCenter)
-                                NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
-                            Else
-                                '若使用者不需要保持外觀比例，直接調整圖像尺寸
-                                NormalizedBitmap = RescaleBitmap(SourceBitmap, ThumbnailWidth, ThumbnailHeight)
-                            End If
+                            Select Case cmbThumbnailResizingMethod.SelectedIndex
+                                Case 0
+                                    '若使用者需要保持外觀比例，填充或裁切圖像
+                                    Dim PaddedBitmapWidth As Integer
+                                    Dim PaddedBitmapHeight As Integer
+                                    If SourceBitmap.Width >= SourceBitmap.Height Then
+                                        PaddedBitmapWidth = SourceBitmap.Width
+                                        PaddedBitmapHeight = SourceBitmap.Width * ThumbnailHeight / ThumbnailWidth
+                                    Else
+                                        PaddedBitmapHeight = SourceBitmap.Height
+                                        PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
+                                    End If
+                                    Dim ThumbnailFillColor As Color
+                                    Select Case cmbThumbnailFillColor.SelectedIndex
+                                        Case 0
+                                            ThumbnailFillColor = Color.Black
+                                        Case 1
+                                            ThumbnailFillColor = Color.White
+                                        Case 2
+                                            ThumbnailFillColor = Color.Transparent
+                                        Case Else
+                                            ThumbnailFillColor = Color.Transparent
+                                    End Select
+                                    Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, ThumbnailFillColor, ContentAlignment.MiddleCenter)
+                                    NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
+                                Case 1
+                                    '若使用者需要保持外觀比例，填充或裁切圖像
+                                    Dim PaddedBitmapWidth As Integer
+                                    Dim PaddedBitmapHeight As Integer
+                                    If SourceBitmap.Width <= SourceBitmap.Height Then
+                                        PaddedBitmapWidth = SourceBitmap.Width
+                                        PaddedBitmapHeight = SourceBitmap.Width * ThumbnailHeight / ThumbnailWidth
+                                    Else
+                                        PaddedBitmapHeight = SourceBitmap.Height
+                                        PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
+                                    End If
+                                    Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, Color.Transparent, ContentAlignment.MiddleCenter)
+                                    NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
+                                Case 2
+                                    '若使用者不需要保持外觀比例，直接調整圖像尺寸
+                                    NormalizedBitmap = RescaleBitmap(SourceBitmap, ThumbnailWidth, ThumbnailHeight)
+                                Case Else
+                                    '若使用者不需要保持外觀比例，直接調整圖像尺寸
+                                    NormalizedBitmap = RescaleBitmap(SourceBitmap, ThumbnailWidth, ThumbnailHeight)
+                            End Select
 
                             '儲存到暫存檔
                             Dim NormalizedBitmapEncoderParams As New EncoderParameters(1)
@@ -831,24 +848,28 @@ Class MainWindow
         chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
         txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        chkKeepThumbnailAspectRatio.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkKeepThumbnailAspectRatio.IsChecked
+        cmbThumbnailResizingMethod.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
     End Sub
 
     Private Sub chkResizeThumbnail_Click(sender As Object, e As RoutedEventArgs) Handles chkResizeThumbnail.Click
         chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
         txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        chkKeepThumbnailAspectRatio.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkKeepThumbnailAspectRatio.IsChecked
+        cmbThumbnailResizingMethod.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
     End Sub
 
-    Private Sub chkKeepThumbnailAspectRatio_Click(sender As Object, e As RoutedEventArgs) Handles chkKeepThumbnailAspectRatio.Click
-        chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
-        txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        chkKeepThumbnailAspectRatio.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkKeepThumbnailAspectRatio.IsChecked
+    Private Sub cmbThumbnailResizingMethod_SelectionChanged(sender As Object, e As RoutedEventArgs) Handles cmbThumbnailResizingMethod.SelectionChanged
+        Try
+            chkResizeThumbnail.IsEnabled = chkThumbnailOnly.IsChecked
+            txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+            txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+            cmbThumbnailResizingMethod.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
+            cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
+        Catch ex As Exception
+
+        End Try
     End Sub
 
     Private Sub txtThumbnailWidth_LostFocus(sender As Object, e As RoutedEventArgs) Handles txtThumbnailWidth.LostFocus
