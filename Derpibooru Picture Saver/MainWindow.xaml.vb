@@ -102,7 +102,7 @@ Class MainWindow
         txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         cmbThumbnailResizingMethod.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
         chkCacheAllPages.IsEnabled = True
         cmbFilters.IsEnabled = True
         cmbSordField.IsEnabled = True
@@ -849,7 +849,7 @@ Class MainWindow
         txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         cmbThumbnailResizingMethod.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
     End Sub
 
     Private Sub chkResizeThumbnail_Click(sender As Object, e As RoutedEventArgs) Handles chkResizeThumbnail.Click
@@ -857,7 +857,7 @@ Class MainWindow
         txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
         cmbThumbnailResizingMethod.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
+        cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
     End Sub
 
     Private Sub cmbThumbnailResizingMethod_SelectionChanged(sender As Object, e As RoutedEventArgs) Handles cmbThumbnailResizingMethod.SelectionChanged
@@ -866,7 +866,7 @@ Class MainWindow
             txtThumbnailWidth.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
             txtThumbnailHeight.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
             cmbThumbnailResizingMethod.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked
-            cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
+            cmbThumbnailFillColor.IsEnabled = chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked And (cmbThumbnailResizingMethod.SelectedIndex = 0)
         Catch ex As Exception
 
         End Try
