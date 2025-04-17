@@ -180,7 +180,7 @@ Class MainWindow
         End If
     End Sub
 
-    Private Sub btnStart_Click(sender As Object, e As RoutedEventArgs) Handles btnStart.Click
+    Private Async Sub btnStart_Click(sender As Object, e As RoutedEventArgs) Handles btnStart.Click
         LockWindow()
         ValidateThumbnailSizes()
         SaveSettings()
@@ -299,9 +299,10 @@ Class MainWindow
         UpdateLayout()
         Dim sJSON As String = ""
         Dim iPageTotal As Integer
+        Dim JsonReq As New JsonFetcher
         Dim HttpReq As New SimpleHttpRequest.HttpJsonRequest
         Try
-            sJSON = HttpReq.DoGet(SearchQuery)
+            sJSON = Await JsonReq.DoGetAsync(SearchQuery)
         Catch ex As Exception
             MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
             UnlockWindow()
@@ -333,7 +334,7 @@ Class MainWindow
                 txtStatus.Text = "正在快取搜尋結果。"
                 UpdateLayout()
                 Try
-                    sJSON = HttpReq.DoGet(SearchQuery)
+                    sJSON = Await JsonReq.DoGetAsync(SearchQuery)
                 Catch ex As Exception
                     MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                     txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
@@ -388,7 +389,7 @@ Class MainWindow
                     '    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
                     'End If
                     Try
-                        sJSON = HttpReq.DoGet(SearchQuery)
+                        sJSON = Await JsonReq.DoGetAsync(SearchQuery)
                     Catch ex As Exception
                         MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                         UnlockWindow()
@@ -408,7 +409,7 @@ Class MainWindow
             If Not chkCacheAllPages.IsChecked Then
                 '未使用快取時，重新計算資料
                 Try
-                    sJSON = HttpReq.DoGet(SearchQuery)
+                    sJSON = Await JsonReq.DoGetAsync(SearchQuery)
                 Catch ex As Exception
                     MessageBox.Show("發生例外情況:" & vbCrLf & ex.Message, "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error)
                     txtStatus.Text = "發生例外情況: " & ex.Message & "，結束作業。"
@@ -482,7 +483,7 @@ Class MainWindow
                     '    'sSearchQuery = sSearchQuery & DerpibooruImagesMaxScoreSelector & iMaxScore.ToString()
                     'End If
                     Try
-                        sJSON = HttpReq.DoGet(SearchQuery)
+                        sJSON = Await JsonReq.DoGetAsync(SearchQuery)
                     Catch ex As Exception
                         Dim iIgnoredImageCount As Integer
                         If iPageIndex = iPageTotal Then
@@ -609,7 +610,7 @@ Class MainWindow
                             End Try
                         End If
                         '下載檔案
-                        FileDownloader.DownloadFile(sImageURL, DownloadedFileSavePath & sImageFileName)
+                        Await FileDownloader.DownloadFileTaskAsync(sImageURL, DownloadedFileSavePath & sImageFileName)
                         '一致化縮圖
                         If chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked Then
                             '讀取原始圖像
