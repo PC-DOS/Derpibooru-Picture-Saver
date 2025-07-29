@@ -320,8 +320,6 @@ Class MainWindow
         iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
         Dim iTotalPageCountToDownload As Integer = iPageTotal
         Dim iTotalImageCountToDownload As Integer = iImageTotal
-        PageIndexBegin = 1
-        PageIndexEnd = iPageTotal
         txtStatus.Text = "JSON 檔案擷取完畢，總共搜尋到 " & JSONResponse("total").ToString & " 張相片。一共 " & iPageTotal.ToString & " 個分頁。"
         UpdateLayout()
         If JSONResponse("total").ToString = "0" Then
@@ -350,8 +348,6 @@ Class MainWindow
                 iPageTotal = Math.Ceiling((CInt(JSONResponse("total")) / 50))
                 iTotalPageCountToDownload = iPageTotal
                 iTotalImageCountToDownload = iImageTotal
-                PageIndexBegin = 1
-                PageIndexEnd = iPageTotal
                 '計算實際上需要下載的頁面編號
                 If chkRestrictPageCount.IsChecked Then
                     If PageIndexEnd < iPageTotal Then
@@ -372,6 +368,9 @@ Class MainWindow
                         SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                         Exit Sub
                     End If
+                Else
+                    PageIndexBegin = 1
+                    PageIndexEnd = iPageTotal
                 End If
                 prgProgress.Maximum = iTotalPageCountToDownload
                 prgProgress.Minimum = 0
@@ -446,6 +445,9 @@ Class MainWindow
                         SetTaskbarProgess(100, 0, 0, Shell.TaskbarItemProgressState.None)
                         Exit Sub
                     End If
+                Else
+                    PageIndexBegin = 1
+                    PageIndexEnd = iPageTotal
                 End If
             End If
             prgProgress.Maximum = iTotalImageCountToDownload
