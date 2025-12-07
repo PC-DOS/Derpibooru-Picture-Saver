@@ -264,7 +264,7 @@ Class MainWindow
             ParallelCount = Environment.ProcessorCount - 1
         End If
         txtParallelCount.Text = ParallelCount.ToString()
-        ThreadPool.SetMaxThreads(ParallelCount, ParallelCount)
+        Dim ParallelSemaphore As New SemaphoreSlim(ParallelCount)
         Dim TaskList As New List(Of Task(Of Dictionary(Of String, String)))
         '構造檢索請求URL
         Dim iPageIndex As Integer = 1
@@ -472,8 +472,6 @@ Class MainWindow
             prgProgress.Maximum = iTotalImageCountToDownload
             prgProgress.Minimum = 0
             prgProgress.Value = 0
-            Dim sImageFileName As String = ""
-            Dim sImageURL As String = ""
             Dim nSuccess As Integer = 0
             Dim nFail As Integer = 0
             Dim nIgnored As Integer = 0
@@ -529,6 +527,8 @@ Class MainWindow
                 '讀取伺服器回應的資料
                 JSONResponse = JsonConvert.DeserializeObject(sJSON)
                 '周遊每一張影像
+                URLList.Add("正在排程下載任務，這可能需要一些時間。")
+                RefreshURLList()
                 For Each ImageJSON As JToken In JSONResponse("images").ToArray
                     '建立下載資料夾
                     If Not Directory.Exists(DownloadedFileSavePath) Then
@@ -544,6 +544,8 @@ Class MainWindow
                         End Try
                     End If
                     '獲取下載URL與目標
+                    Dim sImageURL As String = ""
+                    Dim sImageFileName As String = ""
                     If chkFilenameNoTags.IsChecked And Not chkThumbnailOnly.IsChecked Then
                         sImageURL = ImageJSON("representations")("full").ToString
                     ElseIf chkFilenameNoTags.IsChecked And chkThumbnailOnly.IsChecked Then
@@ -624,29 +626,44 @@ Class MainWindow
                         End If
                     End If
                     '下載影像
+                    Dim IsThumbOnly As Boolean = chkThumbnailOnly.IsChecked
+                    Dim IsThumbResized As Boolean = chkResizeThumbnail.IsChecked
+                    Dim ThumbResizingMethod As Integer = cmbThumbnailResizingMethod.SelectedIndex
+                    Dim IsMetaDataSavedToFile As Boolean = chkSaveMetadataToFile.IsChecked
+                    Dim MetaDataTagSeparator As Integer = cmbTagSeparator.SelectedIndex
+                    Dim ParamDict As New Dictionary(Of String, String)
+                    ParamDict.Add("URL", sImageURL)
+                    ParamDict.Add("DownloadPath", DownloadedFileSavePath)
+                    ParamDict.Add("FileName", sImageFileName)
                     Dim CurrentTask As Task(Of Dictionary(Of String, String)) = _
                         Task.Factory.StartNew(Function()
                                                   Dim ResultDict As New Dictionary(Of String, String)
+
+                                                  Dim CurrentURL As String = ParamDict("URL")
+                                                  Dim CurrentDownloadedFileSavePath As String = ParamDict("DownloadPath")
+                                                  Dim CurrentImageFileName As String = ParamDict("FileName")
+                                                  ParallelSemaphore.Wait()
+
                                                   Dim FileDownloader As New WebClient
                                                   Try
                                                       '刪除已經存在的檔案
-                                                      If File.Exists(DownloadedFileSavePath & sImageFileName) Then
+                                                      If File.Exists(CurrentDownloadedFileSavePath & CurrentImageFileName) Then
                                                           Try
-                                                              File.Delete(DownloadedFileSavePath & sImageFileName)
+                                                              File.Delete(CurrentDownloadedFileSavePath & CurrentImageFileName)
                                                           Catch ex As Exception
 
                                                           End Try
                                                       End If
                                                       '下載檔案
-                                                      FileDownloader.DownloadFile(sImageURL, DownloadedFileSavePath & sImageFileName)
+                                                      FileDownloader.DownloadFile(CurrentURL, CurrentDownloadedFileSavePath & CurrentImageFileName)
                                                       '一致化縮圖
-                                                      If chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked Then
+                                                      If IsThumbOnly And IsThumbResized Then
                                                           '讀取原始圖像
-                                                          Dim SourceBitmap As Bitmap = New Bitmap(DownloadedFileSavePath & sImageFileName)
+                                                          Dim SourceBitmap As Bitmap = New Bitmap(CurrentDownloadedFileSavePath & CurrentImageFileName)
 
                                                           '決定一致化策略
                                                           Dim NormalizedBitmap As Bitmap
-                                                          Select Case cmbThumbnailResizingMethod.SelectedIndex
+                                                          Select Case ThumbResizingMethod
                                                               Case 0
                                                                   '若使用者需要保持外觀比例，填充或裁切圖像
                                                                   Dim PaddedBitmapWidth As Integer
@@ -695,44 +712,44 @@ Class MainWindow
                                                           '儲存到暫存檔
                                                           Dim NormalizedBitmapEncoderParams As New EncoderParameters(1)
                                                           NormalizedBitmapEncoderParams.Param(0) = New EncoderParameter(Encoder.Quality, Int(100))
-                                                          If File.Exists(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png") Then
+                                                          If File.Exists(CurrentDownloadedFileSavePath & Path.GetFileNameWithoutExtension(CurrentImageFileName) & "_tmp.png") Then
                                                               Try
-                                                                  File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png")
+                                                                  File.Delete(CurrentDownloadedFileSavePath & Path.GetFileNameWithoutExtension(CurrentImageFileName) & "_tmp.png")
                                                               Catch ex As Exception
 
                                                               End Try
                                                           End If
-                                                          NormalizedBitmap.Save(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png", GetImageEncoderInfo(ImageFormat.Png), NormalizedBitmapEncoderParams)
+                                                          NormalizedBitmap.Save(CurrentDownloadedFileSavePath & Path.GetFileNameWithoutExtension(CurrentImageFileName) & "_tmp.png", GetImageEncoderInfo(ImageFormat.Png), NormalizedBitmapEncoderParams)
                                                           '取代下載的文件
                                                           SourceBitmap.Dispose()
                                                           Try
-                                                              File.Delete(DownloadedFileSavePath & sImageFileName)
+                                                              File.Delete(CurrentDownloadedFileSavePath & CurrentImageFileName)
                                                           Catch ex As Exception
 
                                                           End Try
                                                           Try
-                                                              File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & ".png")
+                                                              File.Delete(CurrentDownloadedFileSavePath & Path.GetFileNameWithoutExtension(CurrentImageFileName) & ".png")
                                                           Catch ex As Exception
 
                                                           End Try
-                                                          File.Move(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png", DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & ".png")
+                                                          File.Move(CurrentDownloadedFileSavePath & Path.GetFileNameWithoutExtension(CurrentImageFileName) & "_tmp.png", CurrentDownloadedFileSavePath & Path.GetFileNameWithoutExtension(CurrentImageFileName) & ".png")
                                                           Try
-                                                              File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png")
+                                                              File.Delete(CurrentDownloadedFileSavePath & Path.GetFileNameWithoutExtension(CurrentImageFileName) & "_tmp.png")
                                                           Catch ex As Exception
 
                                                           End Try
-                                                          sImageFileName = Path.GetFileNameWithoutExtension(sImageFileName) & ".png"
+                                                          CurrentImageFileName = Path.GetFileNameWithoutExtension(CurrentImageFileName) & ".png"
                                                       End If
                                                       '儲存標籤
-                                                      If chkSaveMetadataToFile.IsChecked Then
-                                                          Dim MetadataFilePath As String = DownloadedFileSavePath & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
+                                                      If IsMetaDataSavedToFile Then
+                                                          Dim MetadataFilePath As String = CurrentDownloadedFileSavePath & IO.Path.GetFileNameWithoutExtension(CurrentImageFileName) & ".txt"
                                                           Dim MetadataFileStream As New FileStream(MetadataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)
                                                           Dim MetadataFileWriter As New StreamWriter(MetadataFileStream)
                                                           Dim TagList As List(Of JToken) = ImageJSON("tags").ToList
                                                           If TagList.Count > 0 Then
                                                               For i As Integer = 0 To TagList.Count - 1
                                                                   '寫標籤
-                                                                  Select Case cmbTagSeparator.SelectedIndex
+                                                                  Select Case MetaDataTagSeparator
                                                                       Case 0 '逗號
                                                                           MetadataFileWriter.Write(TagList(i).ToString())
                                                                       Case 1 '換行
@@ -744,7 +761,7 @@ Class MainWindow
                                                                   End Select
                                                                   '寫分隔符號
                                                                   If i <> TagList.Count - 1 Then
-                                                                      Select Case cmbTagSeparator.SelectedIndex
+                                                                      Select Case MetaDataTagSeparator
                                                                           Case 0 '逗號
                                                                               MetadataFileWriter.Write(", ")
                                                                           Case 1 '換行
@@ -761,31 +778,45 @@ Class MainWindow
                                                           MetadataFileStream.Close()
                                                       End If
                                                       'nSuccess += 1
-                                                      'URLList.Add("成功從 " & sImageURL & " 下載相片到 " & DownloadedFileSavePath & sImageFileName)
+                                                      'URLList.Add("成功從 " & CurrentURL & " 下載相片到 " & CurrentDownloadedFileSavePath & CurrentImageFileName)
                                                       'RefreshURLList()
                                                       ResultDict.Add("IsSucceeded", "True")
-                                                      ResultDict.Add("Message", "成功從 " & sImageURL & " 下載相片到 " & DownloadedFileSavePath & sImageFileName)
+                                                      ResultDict.Add("Message", "成功從 " & CurrentURL & " 下載相片到 " & CurrentDownloadedFileSavePath & CurrentImageFileName)
                                                   Catch ex As Exception
                                                       'MsgBox(ex.Message & vbCrLf & ex.Source & vbCrLf & ex.StackTrace)
-                                                      'URLList.Add("從 " & sImageURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
+                                                      'URLList.Add("從 " & CurrentURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
                                                       'RefreshURLList()
                                                       'nFail += 1
                                                       ResultDict.Add("IsSucceeded", "False")
-                                                      ResultDict.Add("Message", "從 " & sImageURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
+                                                      ResultDict.Add("Message", "從 " & CurrentURL & " 下載相片時失敗，發生例外情況: " & ex.Message & vbCrLf & ex.StackTrace)
                                                   End Try
+
+                                                  ParallelSemaphore.Release()
+
                                                   Return ResultDict
                                               End Function)
                     TaskList.Add(CurrentTask)
+
+                    If TaskList.Count = iTotalImageCountToDownload Or TaskList.Count Mod 50 = 0 Then
+                        URLList.Add("下載任務排程: 已排程 " & TaskList.Count.ToString() & "/" & iTotalImageCountToDownload.ToString() & " 個任務。")
+                        RefreshURLList()
+                        System.Windows.Forms.Application.DoEvents()
+                    End If
                     If chkPause.IsChecked Then
                         If TaskList.Count Mod PauseThreshold = 0 Then
+                            System.Windows.Forms.Application.DoEvents()
                             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(PauseDuration))
                         End If
                     End If
                 Next
             Next
             '等候下載排程結束
+            URLList.Add("下載任務排程完畢，正在等候任務結束。")
+            RefreshURLList()
             For Each CurrentTask In TaskList
-                CurrentTask.Wait()
+                Await Task.Factory.StartNew(Sub()
+                                                CurrentTask.Wait()
+                                            End Sub)
                 If CurrentTask.Result("IsSucceeded") = "True" Then
                     nSuccess += 1
                 Else
