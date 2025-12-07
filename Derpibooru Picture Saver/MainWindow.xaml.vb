@@ -485,6 +485,8 @@ Class MainWindow
                 iPageIndexLoopEnd = PageIndexEnd
             End If
             '周遊每一個頁面
+            URLList.Add("正在排程下載任務，這可能需要一些時間。")
+            RefreshURLList()
             For iPageIndex = iPageIndexLoopBegin To iPageIndexLoopEnd
                 '決定是使用快取或是重新擷取資料
                 If chkCacheAllPages.IsChecked Then
@@ -515,7 +517,7 @@ Class MainWindow
                             iIgnoredImageCount = 50
                         End If
                         nIgnored += iIgnoredImageCount
-                        URLList.Add("嘗試擷取頁面" & iPageIndex.ToString & "的資訊時發生例外情況:" & vbCrLf & ex.Message & "，已略過 " & iIgnoredImageCount & " 個下載作業。")
+                        URLList.Add("嘗試擷取頁面" & iPageIndex.ToString() & "的資訊時發生例外情況:" & vbCrLf & ex.Message & "，已略過 " & iIgnoredImageCount & " 個下載作業。")
                         RefreshURLList()
                         System.Windows.Forms.Application.DoEvents()
                         prgProgress.Value += iIgnoredImageCount
@@ -527,8 +529,6 @@ Class MainWindow
                 '讀取伺服器回應的資料
                 JSONResponse = JsonConvert.DeserializeObject(sJSON)
                 '周遊每一張影像
-                URLList.Add("正在排程下載任務，這可能需要一些時間。")
-                RefreshURLList()
                 For Each ImageJSON As JToken In JSONResponse("images").ToArray
                     '建立下載資料夾
                     If Not Directory.Exists(DownloadedFileSavePath) Then
@@ -631,17 +631,13 @@ Class MainWindow
                     Dim ThumbResizingMethod As Integer = cmbThumbnailResizingMethod.SelectedIndex
                     Dim IsMetaDataSavedToFile As Boolean = chkSaveMetadataToFile.IsChecked
                     Dim MetaDataTagSeparator As Integer = cmbTagSeparator.SelectedIndex
-                    Dim ParamDict As New Dictionary(Of String, String)
-                    ParamDict.Add("URL", sImageURL)
-                    ParamDict.Add("DownloadPath", DownloadedFileSavePath)
-                    ParamDict.Add("FileName", sImageFileName)
+                    Dim CurrentURL As String = sImageURL
+                    Dim CurrentDownloadedFileSavePath As String = DownloadedFileSavePath
+                    Dim CurrentImageFileName As String = sImageFileName
                     Dim CurrentTask As Task(Of Dictionary(Of String, String)) = _
                         Task.Factory.StartNew(Function()
                                                   Dim ResultDict As New Dictionary(Of String, String)
 
-                                                  Dim CurrentURL As String = ParamDict("URL")
-                                                  Dim CurrentDownloadedFileSavePath As String = ParamDict("DownloadPath")
-                                                  Dim CurrentImageFileName As String = ParamDict("FileName")
                                                   ParallelSemaphore.Wait()
 
                                                   Dim FileDownloader As New WebClient
