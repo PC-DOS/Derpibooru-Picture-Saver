@@ -76,12 +76,16 @@
                 <TextBlock Text="頁上的相片。" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,5,0,0" >
+                <TextBlock Text="同時執行的下載任務數量: " Padding="10,0,0,0" VerticalAlignment="Center"/>
+                <TextBox x:Name="txtParallelCount" Text="1" Width="25" VerticalAlignment="Center" />
                 <CheckBox x:Name="chkPause" Content="下載時啟用暫止(_P)" VerticalAlignment="Center" Margin="10,0,0,0" />
                 <TextBlock Text="每下載" Padding="5,0,0,0" VerticalAlignment="Center"/>
                 <TextBox x:Name="txtPauseThreshold" Text="100" Width="45" VerticalAlignment="Center" IsEnabled="False" />
                 <TextBlock Text="張相片後擱置" VerticalAlignment="Center"/>
                 <TextBox x:Name="txtPauseDuration" Text="5" Width="25" VerticalAlignment="Center" IsEnabled="False" />
                 <TextBlock Text="秒鐘，以避免被伺服器封鎖。" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0" >
                 <CheckBox x:Name="chkUseTrixieBooru" Content="使用備用地址 _TrixieBooru.org" VerticalAlignment="Center" Margin="10,0,0,0" />
                 <Button x:Name="btnCustomizeAPI" Content="自訂服務地址(_D)" IsEnabled="False"  Margin="5,0,0,0" />
                 <CheckBox x:Name="chkCacheAllPages" Content="開始下載前快取所有頁面的資訊(_C)" VerticalAlignment="Center" Margin="10,0,0,0" />

@@ -4,6 +4,7 @@ Imports System.IO
 Imports System.Windows.Forms
 Imports System.Windows.Window
 Imports System.Net
+Imports System.Threading
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 Class MainWindow
@@ -47,6 +48,7 @@ Class MainWindow
     Private Sub LockWindow()
         txtMaxScore.IsEnabled = False
         txtMinScore.IsEnabled = False
+        txtParallelCount.IsEnabled = False
         txtPauseDuration.IsEnabled = False
         txtPauseThreshold.IsEnabled = False
         txtSaveTo.IsEnabled = False
@@ -80,6 +82,7 @@ Class MainWindow
     Private Sub UnlockWindow()
         txtMaxScore.IsEnabled = chkRestrictMaxScore.IsChecked
         txtMinScore.IsEnabled = chkRestrictMinScore.IsChecked
+        txtParallelCount.IsEnabled = True
         txtPauseDuration.IsEnabled = chkPause.IsChecked
         txtPauseThreshold.IsEnabled = chkPause.IsChecked
         txtSaveTo.IsEnabled = True
@@ -247,6 +250,22 @@ Class MainWindow
             PageIndexEnd = Int(txtPageIndexEnd.Text)
             PageCount = PageIndexEnd - PageIndexBegin + 1
         End If
+        '計算平行任務個數
+        Dim ParallelCount As Integer = 1
+        Try
+            ParallelCount = Int(txtParallelCount.Text)
+        Catch ex As Exception
+            ParallelCount = 1
+        End Try
+        If ParallelCount < 1 Then
+            ParallelCount = 1
+        End If
+        If ParallelCount > Environment.ProcessorCount - 1 Then
+            ParallelCount = Environment.ProcessorCount - 1
+        End If
+        txtParallelCount.Text = ParallelCount.ToString()
+        ThreadPool.SetMaxThreads(ParallelCount, ParallelCount)
+        Dim TaskList As New List(Of Task(Of Dictionary(Of String, String)))
         '構造檢索請求URL
         Dim iPageIndex As Integer = 1
         Dim Filter As New ComboBoxItem
@@ -605,158 +624,179 @@ Class MainWindow
                         End If
                     End If
                     '下載影像
-                    Dim FileDownloader As New WebClient
-                    Try
-                        '刪除已經存在的檔案
-                        If File.Exists(DownloadedFileSavePath & sImageFileName) Then
-                            Try
-                                File.Delete(DownloadedFileSavePath & sImageFileName)
-                            Catch ex As Exception
+                    Dim CurrentTask As Task(Of Dictionary(Of String, String)) = _
+                        Task.Factory.StartNew(Function()
+                                                  Dim ResultDict As New Dictionary(Of String, String)
+                                                  Dim FileDownloader As New WebClient
+                                                  Try
+                                                      '刪除已經存在的檔案
+                                                      If File.Exists(DownloadedFileSavePath & sImageFileName) Then
+                                                          Try
+                                                              File.Delete(DownloadedFileSavePath & sImageFileName)
+                                                          Catch ex As Exception
 
-                            End Try
-                        End If
-                        '下載檔案
-                        Await FileDownloader.DownloadFileTaskAsync(sImageURL, DownloadedFileSavePath & sImageFileName)
-                        '一致化縮圖
-                        If chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked Then
-                            '讀取原始圖像
-                            Dim SourceBitmap As Bitmap = New Bitmap(DownloadedFileSavePath & sImageFileName)
+                                                          End Try
+                                                      End If
+                                                      '下載檔案
+                                                      FileDownloader.DownloadFile(sImageURL, DownloadedFileSavePath & sImageFileName)
+                                                      '一致化縮圖
+                                                      If chkThumbnailOnly.IsChecked And chkResizeThumbnail.IsChecked Then
+                                                          '讀取原始圖像
+                                                          Dim SourceBitmap As Bitmap = New Bitmap(DownloadedFileSavePath & sImageFileName)
 
-                            '決定一致化策略
-                            Dim NormalizedBitmap As Bitmap
-                            Select Case cmbThumbnailResizingMethod.SelectedIndex
-                                Case 0
-                                    '若使用者需要保持外觀比例，填充或裁切圖像
-                                    Dim PaddedBitmapWidth As Integer
-                                    Dim PaddedBitmapHeight As Integer
-                                    If SourceBitmap.Width >= SourceBitmap.Height Then
-                                        PaddedBitmapWidth = SourceBitmap.Width
-                                        PaddedBitmapHeight = SourceBitmap.Width * ThumbnailHeight / ThumbnailWidth
-                                    Else
-                                        PaddedBitmapHeight = SourceBitmap.Height
-                                        PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
-                                    End If
-                                    Dim ThumbnailFillColor As Color
-                                    Select Case cmbThumbnailFillColor.SelectedIndex
-                                        Case 0
-                                            ThumbnailFillColor = Color.Black
-                                        Case 1
-                                            ThumbnailFillColor = Color.White
-                                        Case 2
-                                            ThumbnailFillColor = Color.Transparent
-                                        Case Else
-                                            ThumbnailFillColor = Color.Transparent
-                                    End Select
-                                    Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, ThumbnailFillColor, ContentAlignment.MiddleCenter)
-                                    NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
-                                Case 1
-                                    '若使用者需要保持外觀比例，填充或裁切圖像
-                                    Dim PaddedBitmapWidth As Integer
-                                    Dim PaddedBitmapHeight As Integer
-                                    If SourceBitmap.Width <= SourceBitmap.Height Then
-                                        PaddedBitmapWidth = SourceBitmap.Width
-                                        PaddedBitmapHeight = SourceBitmap.Width * ThumbnailHeight / ThumbnailWidth
-                                    Else
-                                        PaddedBitmapHeight = SourceBitmap.Height
-                                        PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
-                                    End If
-                                    Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, Color.Transparent, ContentAlignment.MiddleCenter)
-                                    NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
-                                Case 2
-                                    '若使用者不需要保持外觀比例，直接調整圖像尺寸
-                                    NormalizedBitmap = RescaleBitmap(SourceBitmap, ThumbnailWidth, ThumbnailHeight)
-                                Case Else
-                                    '若使用者不需要保持外觀比例，直接調整圖像尺寸
-                                    NormalizedBitmap = RescaleBitmap(SourceBitmap, ThumbnailWidth, ThumbnailHeight)
-                            End Select
+                                                          '決定一致化策略
+                                                          Dim NormalizedBitmap As Bitmap
+                                                          Select Case cmbThumbnailResizingMethod.SelectedIndex
+                                                              Case 0
+                                                                  '若使用者需要保持外觀比例，填充或裁切圖像
+                                                                  Dim PaddedBitmapWidth As Integer
+                                                                  Dim PaddedBitmapHeight As Integer
+                                                                  If SourceBitmap.Width >= SourceBitmap.Height Then
+                                                                      PaddedBitmapWidth = SourceBitmap.Width
+                                                                      PaddedBitmapHeight = SourceBitmap.Width * ThumbnailHeight / ThumbnailWidth
+                                                                  Else
+                                                                      PaddedBitmapHeight = SourceBitmap.Height
+                                                                      PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
+                                                                  End If
+                                                                  Dim ThumbnailFillColor As Color
+                                                                  Select Case cmbThumbnailFillColor.SelectedIndex
+                                                                      Case 0
+                                                                          ThumbnailFillColor = Color.Black
+                                                                      Case 1
+                                                                          ThumbnailFillColor = Color.White
+                                                                      Case 2
+                                                                          ThumbnailFillColor = Color.Transparent
+                                                                      Case Else
+                                                                          ThumbnailFillColor = Color.Transparent
+                                                                  End Select
+                                                                  Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, ThumbnailFillColor, ContentAlignment.MiddleCenter)
+                                                                  NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
+                                                              Case 1
+                                                                  '若使用者需要保持外觀比例，填充或裁切圖像
+                                                                  Dim PaddedBitmapWidth As Integer
+                                                                  Dim PaddedBitmapHeight As Integer
+                                                                  If SourceBitmap.Width <= SourceBitmap.Height Then
+                                                                      PaddedBitmapWidth = SourceBitmap.Width
+                                                                      PaddedBitmapHeight = SourceBitmap.Width * ThumbnailHeight / ThumbnailWidth
+                                                                  Else
+                                                                      PaddedBitmapHeight = SourceBitmap.Height
+                                                                      PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
+                                                                  End If
+                                                                  Dim PaddedBitmap As Bitmap = PadBitmap(SourceBitmap, PaddedBitmapWidth, PaddedBitmapHeight, Color.Transparent, ContentAlignment.MiddleCenter)
+                                                                  NormalizedBitmap = RescaleBitmap(PaddedBitmap, ThumbnailWidth, ThumbnailHeight)
+                                                              Case 2
+                                                                  '若使用者不需要保持外觀比例，直接調整圖像尺寸
+                                                                  NormalizedBitmap = RescaleBitmap(SourceBitmap, ThumbnailWidth, ThumbnailHeight)
+                                                              Case Else
+                                                                  '若使用者不需要保持外觀比例，直接調整圖像尺寸
+                                                                  NormalizedBitmap = RescaleBitmap(SourceBitmap, ThumbnailWidth, ThumbnailHeight)
+                                                          End Select
 
-                            '儲存到暫存檔
-                            Dim NormalizedBitmapEncoderParams As New EncoderParameters(1)
-                            NormalizedBitmapEncoderParams.Param(0) = New EncoderParameter(Encoder.Quality, Int(100))
-                            If File.Exists(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png") Then
-                                Try
-                                    File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png")
-                                Catch ex As Exception
+                                                          '儲存到暫存檔
+                                                          Dim NormalizedBitmapEncoderParams As New EncoderParameters(1)
+                                                          NormalizedBitmapEncoderParams.Param(0) = New EncoderParameter(Encoder.Quality, Int(100))
+                                                          If File.Exists(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png") Then
+                                                              Try
+                                                                  File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png")
+                                                              Catch ex As Exception
 
-                                End Try
-                            End If
-                            NormalizedBitmap.Save(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png", GetImageEncoderInfo(ImageFormat.Png), NormalizedBitmapEncoderParams)
-                            '取代下載的文件
-                            SourceBitmap.Dispose()
-                            Try
-                                File.Delete(DownloadedFileSavePath & sImageFileName)
-                            Catch ex As Exception
+                                                              End Try
+                                                          End If
+                                                          NormalizedBitmap.Save(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png", GetImageEncoderInfo(ImageFormat.Png), NormalizedBitmapEncoderParams)
+                                                          '取代下載的文件
+                                                          SourceBitmap.Dispose()
+                                                          Try
+                                                              File.Delete(DownloadedFileSavePath & sImageFileName)
+                                                          Catch ex As Exception
 
-                            End Try
-                            Try
-                                File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & ".png")
-                            Catch ex As Exception
+                                                          End Try
+                                                          Try
+                                                              File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & ".png")
+                                                          Catch ex As Exception
 
-                            End Try
-                            File.Move(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png", DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & ".png")
-                            Try
-                                File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png")
-                            Catch ex As Exception
+                                                          End Try
+                                                          File.Move(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png", DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & ".png")
+                                                          Try
+                                                              File.Delete(DownloadedFileSavePath & Path.GetFileNameWithoutExtension(sImageFileName) & "_tmp.png")
+                                                          Catch ex As Exception
 
-                            End Try
-                            sImageFileName = Path.GetFileNameWithoutExtension(sImageFileName) & ".png"
-                        End If
-                        '儲存標籤
-                        If chkSaveMetadataToFile.IsChecked Then
-                            Dim MetadataFilePath As String = DownloadedFileSavePath & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
-                            Dim MetadataFileStream As New FileStream(MetadataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)
-                            Dim MetadataFileWriter As New StreamWriter(MetadataFileStream)
-                            Dim TagList As List(Of JToken) = ImageJSON("tags").ToList
-                            If TagList.Count > 0 Then
-                                For i As Integer = 0 To TagList.Count - 1
-                                    '寫標籤
-                                    Select Case cmbTagSeparator.SelectedIndex
-                                        Case 0 '逗號
-                                            MetadataFileWriter.Write(TagList(i).ToString())
-                                        Case 1 '換行
-                                            MetadataFileWriter.Write(TagList(i).ToString())
-                                        Case 2 '空白
-                                            MetadataFileWriter.Write(TagList(i).ToString().Replace(" ", "_"))
-                                        Case Else
-                                            MetadataFileWriter.Write(TagList(i))
-                                    End Select
-                                    '寫分隔符號
-                                    If i <> TagList.Count - 1 Then
-                                        Select Case cmbTagSeparator.SelectedIndex
-                                            Case 0 '逗號
-                                                MetadataFileWriter.Write(", ")
-                                            Case 1 '換行
-                                                MetadataFileWriter.Write(vbCrLf)
-                                            Case 2 '空白
-                                                MetadataFileWriter.Write(" ")
-                                            Case Else
-                                                MetadataFileWriter.Write(", ")
-                                        End Select
-                                    End If
-                                Next
-                            End If
-                            MetadataFileWriter.Close()
-                            MetadataFileStream.Close()
-                        End If
-                        nSuccess += 1
-                        URLList.Add("成功從 " & sImageURL & " 下載相片到 " & DownloadedFileSavePath & sImageFileName)
-                        RefreshURLList()
-                    Catch ex As Exception
-                        'MsgBox(ex.Message & vbCrLf & ex.Source & vbCrLf & ex.StackTrace)
-                        URLList.Add("從 " & sImageURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
-                        RefreshURLList()
-                        nFail += 1
-                    End Try
-                    System.Windows.Forms.Application.DoEvents()
-                    prgProgress.Value += 1
-                    SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
-                    UpdateLayout()
+                                                          End Try
+                                                          sImageFileName = Path.GetFileNameWithoutExtension(sImageFileName) & ".png"
+                                                      End If
+                                                      '儲存標籤
+                                                      If chkSaveMetadataToFile.IsChecked Then
+                                                          Dim MetadataFilePath As String = DownloadedFileSavePath & IO.Path.GetFileNameWithoutExtension(sImageFileName) & ".txt"
+                                                          Dim MetadataFileStream As New FileStream(MetadataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)
+                                                          Dim MetadataFileWriter As New StreamWriter(MetadataFileStream)
+                                                          Dim TagList As List(Of JToken) = ImageJSON("tags").ToList
+                                                          If TagList.Count > 0 Then
+                                                              For i As Integer = 0 To TagList.Count - 1
+                                                                  '寫標籤
+                                                                  Select Case cmbTagSeparator.SelectedIndex
+                                                                      Case 0 '逗號
+                                                                          MetadataFileWriter.Write(TagList(i).ToString())
+                                                                      Case 1 '換行
+                                                                          MetadataFileWriter.Write(TagList(i).ToString())
+                                                                      Case 2 '空白
+                                                                          MetadataFileWriter.Write(TagList(i).ToString().Replace(" ", "_"))
+                                                                      Case Else
+                                                                          MetadataFileWriter.Write(TagList(i))
+                                                                  End Select
+                                                                  '寫分隔符號
+                                                                  If i <> TagList.Count - 1 Then
+                                                                      Select Case cmbTagSeparator.SelectedIndex
+                                                                          Case 0 '逗號
+                                                                              MetadataFileWriter.Write(", ")
+                                                                          Case 1 '換行
+                                                                              MetadataFileWriter.Write(vbCrLf)
+                                                                          Case 2 '空白
+                                                                              MetadataFileWriter.Write(" ")
+                                                                          Case Else
+                                                                              MetadataFileWriter.Write(", ")
+                                                                      End Select
+                                                                  End If
+                                                              Next
+                                                          End If
+                                                          MetadataFileWriter.Close()
+                                                          MetadataFileStream.Close()
+                                                      End If
+                                                      'nSuccess += 1
+                                                      'URLList.Add("成功從 " & sImageURL & " 下載相片到 " & DownloadedFileSavePath & sImageFileName)
+                                                      'RefreshURLList()
+                                                      ResultDict.Add("IsSucceeded", "True")
+                                                      ResultDict.Add("Message", "成功從 " & sImageURL & " 下載相片到 " & DownloadedFileSavePath & sImageFileName)
+                                                  Catch ex As Exception
+                                                      'MsgBox(ex.Message & vbCrLf & ex.Source & vbCrLf & ex.StackTrace)
+                                                      'URLList.Add("從 " & sImageURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
+                                                      'RefreshURLList()
+                                                      'nFail += 1
+                                                      ResultDict.Add("IsSucceeded", "False")
+                                                      ResultDict.Add("Message", "從 " & sImageURL & " 下載相片時失敗，發生例外情況: " & ex.Message)
+                                                  End Try
+                                                  Return ResultDict
+                                              End Function)
+                    TaskList.Add(CurrentTask)
                     If chkPause.IsChecked Then
-                        If prgProgress.Value Mod PauseThreshold = 0 Then
+                        If TaskList.Count Mod PauseThreshold = 0 Then
                             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(PauseDuration))
                         End If
                     End If
                 Next
+            Next
+            '等候下載排程結束
+            For Each CurrentTask In TaskList
+                CurrentTask.Wait()
+                If CurrentTask.Result("IsSucceeded") = "True" Then
+                    nSuccess += 1
+                Else
+                    nFail += 1
+                End If
+                URLList.Add(CurrentTask.Result("Message"))
+                RefreshURLList()
+                System.Windows.Forms.Application.DoEvents()
+                prgProgress.Value += 1
+                SetTaskbarProgess(iTotalImageCountToDownload, 0, prgProgress.Value, Shell.TaskbarItemProgressState.Normal)
+                UpdateLayout()
             Next
             MessageBox.Show("作業成功完成。本次共成功下載了 " & nSuccess.ToString & " 個檔案，有 " & nFail.ToString & " 個檔案下載失敗，略過了 " & nIgnored.ToString() & " 個檔案。", "大功告成!", MessageBoxButtons.OK, MessageBoxIcon.Information)
             UnlockWindow()
@@ -807,6 +847,7 @@ Class MainWindow
             CurrentSearchPrefix = DerpibooruSearchPrefix
         End If
         cmbTagSeparator.IsEnabled = chkSaveMetadataToFile.IsChecked
+        txtParallelCount.Text = Int(Environment.ProcessorCount / 2).ToString()
         txtSearchKey.Focus()
     End Sub
 
