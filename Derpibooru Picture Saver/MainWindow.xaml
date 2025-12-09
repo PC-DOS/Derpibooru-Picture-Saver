@@ -99,6 +99,8 @@
                     <ComboBoxItem Content="換行"/>
                     <ComboBoxItem Content="空白"/>
                 </ComboBox>
+                <CheckBox x:Name="chkAddPublicTag" Content="加入公共標籤(_X)" IsEnabled="False" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <TextBox x:Name="txtPublicTag" Text="" MinWidth="125" IsEnabled="False" Margin="5,0,0,0" />
             </StackPanel>
             <StackPanel  Orientation="Horizontal" Margin="0,5,0,10">
                 <CheckBox x:Name="chkThumbnailOnly" Content="下載縮圖，而不是完整影像(_H)" VerticalAlignment="Center" Margin="10,0,0,0" />

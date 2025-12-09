@@ -78,6 +78,8 @@ Class MainWindow
         cmbSortDirection.IsEnabled = False
         cmbTagSeparator.IsEnabled = False
         sldMinWilsonScore.IsEnabled = False
+        chkAddPublicTag.IsEnabled = False
+        txtPublicTag.IsEnabled = False
     End Sub
     Private Sub UnlockWindow()
         txtMaxScore.IsEnabled = chkRestrictMaxScore.IsChecked
@@ -112,6 +114,8 @@ Class MainWindow
         cmbSortDirection.IsEnabled = True
         cmbTagSeparator.IsEnabled = chkSaveMetadataToFile.IsChecked
         sldMinWilsonScore.IsEnabled = chkRestrictMinWilsonScore.IsChecked
+        chkAddPublicTag.IsEnabled = chkSaveMetadataToFile.IsChecked
+        txtPublicTag.IsEnabled = chkSaveMetadataToFile.IsChecked And chkAddPublicTag.IsChecked
     End Sub
     Private Sub SaveSettings()
         SaveSetting(ApplicationName, SettingsSectionName, LastDownloadPathKey, txtSaveTo.Text)
@@ -632,6 +636,8 @@ Class MainWindow
                     Dim ThumbFillColorIndex As Integer = cmbThumbnailFillColor.SelectedIndex
                     Dim IsMetaDataSavedToFile As Boolean = chkSaveMetadataToFile.IsChecked
                     Dim MetaDataTagSeparator As Integer = cmbTagSeparator.SelectedIndex
+                    Dim IsPublicTagAdded As Boolean = chkAddPublicTag.IsChecked
+                    Dim PublicTagToAdd As String = txtPublicTag.Text.Trim()
                     Dim CurrentURL As String = sImageURL
                     Dim CurrentDownloadedFileSavePath As String = DownloadedFileSavePath
                     Dim CurrentImageFileName As String = sImageFileName
@@ -743,6 +749,25 @@ Class MainWindow
                                                           Dim MetadataFileStream As New FileStream(MetadataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)
                                                           Dim MetadataFileWriter As New StreamWriter(MetadataFileStream)
                                                           Dim TagList As List(Of JToken) = ImageJSON("tags").ToList
+                                                          '加入公共標籤
+                                                          If IsPublicTagAdded Then
+                                                              If PublicTagToAdd <> "" Then
+                                                                  MetadataFileWriter.Write(PublicTagToAdd)
+                                                              End If
+                                                              If TagList.Count > 0 Then
+                                                                  Select Case MetaDataTagSeparator
+                                                                      Case 0 '逗號
+                                                                          MetadataFileWriter.Write(", ")
+                                                                      Case 1 '換行
+                                                                          MetadataFileWriter.Write(vbCrLf)
+                                                                      Case 2 '空白
+                                                                          MetadataFileWriter.Write(" ")
+                                                                      Case Else
+                                                                          MetadataFileWriter.Write(", ")
+                                                                  End Select
+                                                              End If
+                                                          End If
+                                                          '加入相片標籤
                                                           If TagList.Count > 0 Then
                                                               For i As Integer = 0 To TagList.Count - 1
                                                                   '寫標籤
@@ -918,6 +943,8 @@ Class MainWindow
 
     Private Sub chkSaveMetadataToFile_Click(sender As Object, e As RoutedEventArgs) Handles chkSaveMetadataToFile.Click
         cmbTagSeparator.IsEnabled = chkSaveMetadataToFile.IsChecked
+        chkAddPublicTag.IsEnabled = chkSaveMetadataToFile.IsChecked
+        txtPublicTag.IsEnabled = chkSaveMetadataToFile.IsChecked And chkAddPublicTag.IsChecked
     End Sub
 
     Private Sub chkThumbnailOnly_Click(sender As Object, e As RoutedEventArgs) Handles chkThumbnailOnly.Click
@@ -954,5 +981,9 @@ Class MainWindow
 
     Private Sub txtThumbnailHeight_LostFocus(sender As Object, e As RoutedEventArgs) Handles txtThumbnailHeight.LostFocus
         ValidateThumbnailSizes()
+    End Sub
+
+    Private Sub chkAddPublicTag_Click(sender As Object, e As RoutedEventArgs) Handles chkAddPublicTag.Click
+        txtPublicTag.IsEnabled = chkSaveMetadataToFile.IsChecked And chkAddPublicTag.IsChecked
     End Sub
 End Class

@@ -55,5 +55,5 @@ Imports System.Windows
 ' 指定為預設值: 
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("3.8.1.6")> 
-<Assembly: AssemblyFileVersion("3.8.1.6")> 
+<Assembly: AssemblyVersion("3.8.1.7")> 
+<Assembly: AssemblyFileVersion("3.8.1.7")> 
