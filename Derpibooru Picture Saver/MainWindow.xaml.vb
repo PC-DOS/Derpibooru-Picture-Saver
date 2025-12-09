@@ -628,7 +628,8 @@ Class MainWindow
                     '下載影像
                     Dim IsThumbOnly As Boolean = chkThumbnailOnly.IsChecked
                     Dim IsThumbResized As Boolean = chkResizeThumbnail.IsChecked
-                    Dim ThumbResizingMethod As Integer = cmbThumbnailResizingMethod.SelectedIndex
+                    Dim ThumbResizingMethodIndex As Integer = cmbThumbnailResizingMethod.SelectedIndex
+                    Dim ThumbFillColorIndex As Integer = cmbThumbnailFillColor.SelectedIndex
                     Dim IsMetaDataSavedToFile As Boolean = chkSaveMetadataToFile.IsChecked
                     Dim MetaDataTagSeparator As Integer = cmbTagSeparator.SelectedIndex
                     Dim CurrentURL As String = sImageURL
@@ -659,7 +660,7 @@ Class MainWindow
 
                                                           '決定一致化策略
                                                           Dim NormalizedBitmap As Bitmap
-                                                          Select Case ThumbResizingMethod
+                                                          Select Case ThumbResizingMethodIndex
                                                               Case 0
                                                                   '若使用者需要保持外觀比例，填充或裁切圖像
                                                                   Dim PaddedBitmapWidth As Integer
@@ -672,7 +673,7 @@ Class MainWindow
                                                                       PaddedBitmapWidth = SourceBitmap.Height * ThumbnailWidth / ThumbnailHeight
                                                                   End If
                                                                   Dim ThumbnailFillColor As Color
-                                                                  Select Case cmbThumbnailFillColor.SelectedIndex
+                                                                  Select Case ThumbFillColorIndex
                                                                       Case 0
                                                                           ThumbnailFillColor = Color.Black
                                                                       Case 1
